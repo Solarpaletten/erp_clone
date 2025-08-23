@@ -35,6 +35,15 @@ const CompanySidebar: React.FC = () => {
       badge: null,
     },
     {
+      id: 'dashka',
+      icon: '🎯',
+      title: 'Dashka',
+      route: '/dashka',
+      priority: 12,
+      isPinned: false,
+      badge: 'HOT',
+    },
+    {
       id: 'clients',
       icon: '👥',
       title: 'Clients',
@@ -67,7 +76,7 @@ const CompanySidebar: React.FC = () => {
       icon: '🛒',
       title: 'Purchases',
       route: '/purchases',
-      expandable: true,
+      
       priority: 5,
       isPinned: false,
       badge: null,
@@ -77,11 +86,12 @@ const CompanySidebar: React.FC = () => {
       icon: '🏭',
       title: 'Warehouse',
       route: '/warehouse',
-      expandable: true,
+      
       priority: 6,
       isPinned: false,
       badge: null,
     },
+
     {
       id: 'accounts',
       icon: '📋',
@@ -96,7 +106,7 @@ const CompanySidebar: React.FC = () => {
       icon: '🏦',
       title: 'Banking',
       route: '/banking',
-      expandable: true,
+      
       priority: 8,
       isPinned: false,
       badge: null,
@@ -119,6 +129,17 @@ const CompanySidebar: React.FC = () => {
       isPinned: false,
       badge: 'BETA',
     },
+
+    {
+      id: 'inventory-flow',
+      icon: '🎯',
+      title: 'Товарооборот',
+      route: '/inventory-flow',
+      priority: 12,
+      isPinned: false,
+      badge: 'NEW',
+    },
+    
     {
       id: 'settings',
       icon: '⚙️',

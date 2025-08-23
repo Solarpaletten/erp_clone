@@ -1,219 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { ChevronDown, ChevronRight, GripVertical, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { NavLink } from 'react-router-dom';
+import SidebarGroup, { SidebarGroupItem } from './SidebarGroup';
+import { GripVertical } from 'lucide-react';
 
-interface SidebarItem {
-  id: string;
-  icon: string;
-  title: string;
-  route: string;
-  expandable?: boolean;
-  priority: number;
-  isPinned?: boolean;
-  badge?: string | null;
-}
-
-interface SubmenuState {
-  warehouse: boolean;
-  banking: boolean;
-  purchases: boolean;  
-  sales: boolean;     
-}
-
+/**
+ * Боковое меню компании: закреплённые пункты с drag‑and‑drop
+ * и сгруппированные разделы (Склад, Продажи/Покупки, Финансы).
+ */
 const CompanySidebar: React.FC = () => {
-  const location = useLocation();
-
-  // 🎯 SIDEBAR ITEMS БЕЗ MOCK ДАННЫХ + DRAG&DROP
-  const [sidebarItems, setSidebarItems] = useState<SidebarItem[]>([
-    {
-      id: 'dashboard',
-      icon: '📊',
-      title: 'Dashboard',
-      route: '/dashboard',
-      priority: 1,
-      isPinned: true, 
-      badge: null,
-    },
-    {
-      id: 'dashka',
-      icon: '🎯',
-      title: 'Dashka',
-      route: '/dashka',
-      priority: 12,
-      isPinned: false,
-      badge: 'HOT',
-    },
-    {
-      id: 'clients',
-      icon: '👥',
-      title: 'Clients',
-      route: '/clients',
-      priority: 2,
-      isPinned: false,
-      badge: null, 
-    },
-    {
-      id: 'products',
-      icon: '📦',
-      title: 'Products',
-      route: '/products',
-      priority: 3,
-      isPinned: false,
-      badge: null,
-    },
-    {
-      id: 'sales',
-      icon: '💰',
-      title: 'Sales',
-      route: '/sales',
-      
-      priority: 4,
-      isPinned: false,
-      badge: null,
-    },
-    {
-      id: 'purchases',
-      icon: '🛒',
-      title: 'Purchases',
-      route: '/purchases',
-      
-      priority: 5,
-      isPinned: false,
-      badge: null,
-    },
-    {
-      id: 'warehouse',
-      icon: '🏭',
-      title: 'Warehouse',
-      route: '/warehouse',
-      
-      priority: 6,
-      isPinned: false,
-      badge: null,
-    },
-
-    {
-      id: 'accounts',
-      icon: '📋',
-      title: 'Chart of Accounts',
-      route: '/chart-of-accounts',
-      priority: 7,
-      isPinned: false,
-      badge: null,
-    },
-    {
-      id: 'banking',
-      icon: '🏦',
-      title: 'Banking',
-      route: '/banking',
-      
-      priority: 8,
-      isPinned: false,
-      badge: null,
-    },
-    {
-      id: 'tabbook',
-      icon: '⚡',
-      title: 'TAB-Бухгалтерия',
-      route: '/tabbook',
-      priority: 9,
-      isPinned: false,
-      badge: 'NEW',
-    },
-    {
-      id: 'cloudide',
-      icon: '☁️',
-      title: 'Cloud IDE',
-      route: '/cloudide',
-      priority: 10,
-      isPinned: false,
-      badge: 'BETA',
-    },
-
-    {
-      id: 'inventory-flow',
-      icon: '🎯',
-      title: 'Товарооборот',
-      route: '/inventory-flow',
-      priority: 12,
-      isPinned: false,
-      badge: 'NEW',
-    },
-    
-    {
-      id: 'settings',
-      icon: '⚙️',
-      title: 'Settings',
-      route: '/settings',
-      priority: 11,
-      isPinned: true, // Всегда последний
-      badge: null,
-    },
+  // Закреплённые пункты, которые пользователь видит сразу.
+  const [pinnedItems, setPinnedItems] = useState<SidebarGroupItem[]>([
+    { id: 'dashboard', title: 'Dashboard', route: '/dashboard', icon: '📊' },
+    { id: 'clients', title: 'Clients', route: '/clients', icon: '👥' },
+    { id: 'dashka', title: 'Dashka', route: '/dashka', icon: '🎯', badge: 'HOT' },
+    { id: 'tabbook', title: 'TAB‑Бухгалтерия', route: '/tabbook', icon: '⚡', badge: 'NEW' },
+    { id: 'cloudide', title: 'Cloud IDE', route: '/cloudide', icon: '☁️', badge: 'BETA' },
+    { id: 'inventory-flow', title: 'Товарооборот', route: '/inventory-flow', icon: '🎯', badge: 'NEW' },
   ]);
 
-  // 📱 DRAG & DROP STATE
-  const [draggedItem, setDraggedItem] = useState<SidebarItem | null>(null);
-  const [dragOverItem, setDragOverItem] = useState<SidebarItem | null>(null);
+  // Состояние для drag‑and‑drop
+  const [draggedItem, setDraggedItem] = useState<SidebarGroupItem | null>(null);
+  const [dragOverItem, setDragOverItem] = useState<SidebarGroupItem | null>(null);
 
-  // 🔄 EXPANDABLE MENUS STATE
-  const [expandedMenus, setExpandedMenus] = useState<SubmenuState>({
-    warehouse: location.pathname.includes('/warehouse'),
-    banking: location.pathname.includes('/banking'),
-    purchases: location.pathname.includes('/purchases'),
-    sales: location.pathname.includes('/sales'),
-  });
-
-  // 💾 ЗАГРУЗКА СОХРАНЁННОГО ПОРЯДКА
-  useEffect(() => {
-    const savedPriorities = localStorage.getItem('sidebarPriorities');
-    if (savedPriorities) {
-      try {
-        const priorities = JSON.parse(savedPriorities);
-        setSidebarItems((prevItems) =>
-          prevItems
-            .map((item) => ({
-              ...item,
-              priority: priorities[item.id] || item.priority,
-            }))
-            .sort((a, b) => a.priority - b.priority)
-        );
-      } catch (error) {
-        console.error('Error loading sidebar priorities:', error);
-      }
-    }
-  }, []);
-
-  // 💾 СОХРАНЕНИЕ ПОРЯДКА
-  const savePriorities = (items: SidebarItem[]) => {
-    const priorities: { [key: string]: number } = {};
-    items.forEach((item, index) => {
-      priorities[item.id] = index + 1;
-    });
-    localStorage.setItem('sidebarPriorities', JSON.stringify(priorities));
-  };
-
-  // 🔄 TOGGLE EXPANDABLE MENU
-  const toggleMenu = (itemId: string) => {
-    setExpandedMenus((prev) => ({
-      ...prev,
-      [itemId]: !prev[itemId as keyof SubmenuState],
-    }));
-  };
-
-  // 📱 DRAG & DROP HANDLERS N
-  const handleDragStart = (e: React.DragEvent, item: SidebarItem) => {
-    if (item.isPinned) {
-      e.preventDefault();
-      return;
-    }
+  const handleDragStart = (e: React.DragEvent, item: SidebarGroupItem) => {
     setDraggedItem(item);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e: React.DragEvent, item: SidebarItem) => {
+  const handleDragOver = (e: React.DragEvent, item: SidebarGroupItem) => {
     e.preventDefault();
-    if (item.isPinned || draggedItem?.isPinned) return;
-    e.dataTransfer.dropEffect = 'move';
     setDragOverItem(item);
   };
 
@@ -221,158 +36,111 @@ const CompanySidebar: React.FC = () => {
     setDragOverItem(null);
   };
 
-  const handleDrop = (e: React.DragEvent, targetItem: SidebarItem) => {
+  const handleDrop = (e: React.DragEvent, targetItem: SidebarGroupItem) => {
     e.preventDefault();
-
-    if (
-      !draggedItem ||
-      draggedItem.id === targetItem.id ||
-      targetItem.isPinned
-    ) {
+    if (!draggedItem || draggedItem.id === targetItem.id) {
       setDraggedItem(null);
       setDragOverItem(null);
       return;
     }
-
-    const newItems = [...sidebarItems];
-    const draggedIndex = newItems.findIndex(
-      (item) => item.id === draggedItem.id
-    );
-    const targetIndex = newItems.findIndex((item) => item.id === targetItem.id);
-
-    const [draggedMenuItem] = newItems.splice(draggedIndex, 1);
-    newItems.splice(targetIndex, 0, draggedMenuItem);
-
-    const updatedItems = newItems.map((item, index) => ({
-      ...item,
-      priority: index + 1,
-    }));
-
-    setSidebarItems(updatedItems);
-    savePriorities(updatedItems);
-
+    const newItems = [...pinnedItems];
+    const draggedIndex = newItems.findIndex((it) => it.id === draggedItem.id);
+    const targetIndex = newItems.findIndex((it) => it.id === targetItem.id);
+    const [removed] = newItems.splice(draggedIndex, 1);
+    newItems.splice(targetIndex, 0, removed);
+    setPinnedItems(newItems);
     setDraggedItem(null);
     setDragOverItem(null);
   };
 
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center p-3 hover:bg-slate-700 transition-colors ${
-      isActive ? 'bg-slate-700 border-r-2 border-orange-500' : ''
-    }`;
-
-  // Сортируем по приоритету
-  const sortedItems = [...sidebarItems].sort((a, b) => a.priority - b.priority);
+  // Группы, объединяющие родственные разделы
+  const groups = [
+    {
+      title: 'Склад',
+      items: [
+        { id: 'products', title: 'Products', route: '/products', icon: '📦' },
+        { id: 'warehouse', title: 'Warehouse', route: '/warehouse', icon: '🏭' },
+      ],
+    },
+    {
+      title: 'Продажи и покупки',
+      items: [
+        { id: 'sales', title: 'Sales', route: '/sales', icon: '💰' },
+        { id: 'purchases', title: 'Purchases', route: '/purchases', icon: '🛒' },
+      ],
+    },
+    {
+      title: 'Финансы',
+      items: [
+        { id: 'accounts', title: 'Chart of Accounts', route: '/chart-of-accounts', icon: '📋' },
+        { id: 'banking', title: 'Banking', route: '/banking', icon: '🏦' },
+      ],
+    },
+  ];
 
   return (
-    <div className="w-64 bg-slate-800 text-white flex-shrink-0 h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4">
-        <NavLink
-          to="/account/dashboard"
-          className="text-lg font-bold text-white no-underline hover:opacity-90 transition-opacity"
-          title="Go to company selection"
-        >
-          Solar
-        </NavLink>
-      </div>
+    <nav className="flex flex-col w-60 bg-slate-800 text-white min-h-screen">
+      {/* Логотип/название */}
+      <div className="p-4 text-2xl font-bold border-b border-slate-700">Solar ERP</div>
 
-      {/* Navigation with Drag & Drop */}
-      <nav className="flex-1 overflow-y-auto">
-        {sortedItems.map((item) => (
+      {/* Закреплённые пункты с drag‑and‑drop */}
+      <div className="flex-1 overflow-y-auto">
+        {pinnedItems.map((item) => (
           <div
             key={item.id}
-            className={`
-              ${dragOverItem?.id === item.id ? 'border-t-2 border-orange-500' : ''}
-              ${draggedItem?.id === item.id ? 'opacity-50' : ''}
-            `}
-            draggable={!item.isPinned}
+            className={`flex items-center ${
+              dragOverItem?.id === item.id ? 'border-t-2 border-orange-500' : ''
+            }`}
+            draggable
             onDragStart={(e) => handleDragStart(e, item)}
             onDragOver={(e) => handleDragOver(e, item)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, item)}
           >
-            <div className="flex items-center">
-              {/* Drag Handle */}
-              {!item.isPinned && (
-                <div className="p-2 cursor-grab active:cursor-grabbing hover:bg-slate-700">
-                  <GripVertical className="w-4 h-4 text-slate-400" />
-                </div>
-              )}
-
-              {/* Pinned Icon */}
-              {item.isPinned && (
-                <div className="p-2">
-                  <Star className="w-4 h-4 text-orange-500 fill-current" />
-                </div>
-              )}
-
-              {/* ЗАМЕНИЛ Menu Item */}
-              <div className="flex-1">
-                {item.expandable ? (
-                  // Expandable items - только toggle, не переход
-                  <button
-                    onClick={() => toggleMenu(item.id)}
-                    className="w-full flex items-center p-3 hover:bg-slate-700 transition-colors text-left"
-                  >
-                    <span className="mr-3">{item.icon}</span>
-                    <span className="flex-1">{item.title}</span>
-
-                {/* Badge */}
-                {item.badge && (
-                  <span className="ml-2 px-2 py-1 text-xs bg-orange-500 text-white rounded-full">
-                    {item.badge}
-                  </span>
-                )}
-
-                {/* ЗАМЕНИЛ Expandable Arrow */}
-                <span className="ml-2">
-                      {expandedMenus[item.id as keyof SubmenuState] ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </span>
-                  </button>
-                ) : (
-                  // Non-expandable items - прямой переход
-                  <NavLink
-                    to={item.route}
-                    className={linkClass}
-                  >
-                    <span className="mr-3">{item.icon}</span>
-                    <span className="flex-1">{item.title}</span>
-
-                    {/* Badge */}
-                    {item.badge && (
-                      <span className="ml-2 px-2 py-1 text-xs bg-orange-500 text-white rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
-                  </NavLink>
-                )}
-              </div>
+            <div className="p-2 cursor-grab hover:bg-slate-700">
+              <GripVertical className="w-4 h-4 text-slate-400" />
             </div>
-
-            {/* Submenu for expandable items */}
-            </div>
+            <NavLink
+              to={item.route}
+              className={({ isActive }) =>
+                `flex-1 flex items-center p-3 hover:bg-slate-700 transition-colors ${
+                  isActive ? 'bg-slate-700 border-r-2 border-orange-500' : ''
+                }`
+              }
+            >
+              <span className="mr-2">{item.icon}</span>
+              <span>{item.title}</span>
+              {item.badge && (
+                <span className="ml-2 px-2 py-1 text-xs bg-orange-500 text-white rounded-full">
+                  {item.badge}
+                </span>
+              )}
+            </NavLink>
+          </div>
         ))}
-      </nav>
 
-      {/* Footer */}
-      <div className="border-t border-slate-700 p-4">
+        {/* Группы меню */}
+        <div className="mt-4">
+          {groups.map((group) => (
+            <SidebarGroup key={group.title} title={group.title} items={group.items} />
+          ))}
+        </div>
+      </div>
+
+      {/* Нижняя часть – возврат к выбору компании */}
+      <div className="mt-auto p-3 border-t border-slate-700">
         <button
           onClick={() => {
             localStorage.removeItem('currentCompanyId');
             localStorage.removeItem('currentCompanyName');
             window.location.href = '/account/dashboard';
           }}
-          className="text-sm text-slate-400 hover:text-white transition-colors w-full text-left flex items-center"
+          className="w-full text-left text-slate-400 hover:text-white flex items-center"
         >
-          <span className="mr-2">🔙</span>
-          <span>Back to Companies</span>
+          🔙 Back to Companies
         </button>
       </div>
-    </div>
+    </nav>
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import CompanySidebar from './CompanySidebar';
+import CompanySidebar from './CompanySidebar.tsx.b';
 import CompanyHeader from './CompanyHeader';
 
 interface CompanyLayoutProps {
