@@ -1,0 +1,27 @@
+// Prisma schema for ERP clone backend
+// Datasource uses SQLite for easy local development. Adjust as needed.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Client model stores both customers and suppliers.
+// The `role` field is stored as plain text because SQLite does not support enums.
+model Client {
+  id          Int        @id @default(autoincrement())
+  name        String
+  abbreviation String?
+  code        String?
+  email       String
+  phone       String?
+  // possible values: "CLIENT", "SUPPLIER", or "BOTH"
+  role        String     @default("CLIENT")
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
