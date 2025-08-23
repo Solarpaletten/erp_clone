@@ -1,6 +1,10 @@
 // f/src/pages/company/purchases/components/PurchasesTable.tsx
 import React from 'react';
 import { Purchase, PaymentStatus, DeliveryStatus } from '../types/purchasesTypes';
+import { CopyPurchaseButton } from '../airborne/CopyButton';
+import FlexibleCopyModal from '../airborne/FlexibleCopyModal'; // проверь правильно добавил?
+
+
 
 interface PurchasesTableProps {
   purchases: Purchase[];
@@ -12,6 +16,18 @@ interface PurchasesTableProps {
   sortOrder?: 'asc' | 'desc';
   onSort?: (field: string) => void;
 }
+
+const [isModalOpen, setIsModalOpen] = useState(false); //// проверь правильно добавил?
+
+<FlexibleCopyModal 
+  isOpen={isModalOpen}
+  onClose={() => setIsModalOpen(false)}
+  onSuccess={(result) => {
+    console.log('Успешно скопировано!', result);
+    // Обновить данные или перенаправить
+  }}
+  companyId={currentCompanyId}
+/> 
 
 // Status Badge Component
 const StatusBadge: React.FC<{ status: PaymentStatus | DeliveryStatus; type: 'payment' | 'delivery' }> = ({ status, type }) => {
@@ -45,10 +61,10 @@ const StatusBadge: React.FC<{ status: PaymentStatus | DeliveryStatus; type: 'pay
 };
 
 // Sort Icon Component
-const SortIcon: React.FC<{ field: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }> = ({ 
-  field, 
-  sortBy, 
-  sortOrder 
+const SortIcon: React.FC<{ field: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }> = ({
+  field,
+  sortBy,
+  sortOrder
 }) => {
   if (sortBy !== field) {
     return <span className="text-gray-400">↕️</span>;
@@ -75,6 +91,17 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
       onSort(field);
     }
   };
+
+  // В строке таблицы:
+  <CopyPurchaseButton
+    documentId={purchase.id}
+    size="sm"
+    variant="minimal"
+    onCopySuccess={(result) => {
+      console.log('Скопировано!', result);
+      // Обновить список или показать уведомление
+    }}
+  />
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -108,7 +135,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('document_number')}
               >
@@ -117,7 +144,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                   <SortIcon field="document_number" sortBy={sortBy} sortOrder={sortOrder} />
                 </div>
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('supplier_id')}
               >
@@ -126,7 +153,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                   <SortIcon field="supplier_id" sortBy={sortBy} sortOrder={sortOrder} />
                 </div>
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('document_date')}
               >
@@ -135,7 +162,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                   <SortIcon field="document_date" sortBy={sortBy} sortOrder={sortOrder} />
                 </div>
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('total_amount')}
               >
@@ -144,7 +171,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                   <SortIcon field="total_amount" sortBy={sortBy} sortOrder={sortOrder} />
                 </div>
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('payment_status')}
               >
@@ -153,7 +180,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                   <SortIcon field="payment_status" sortBy={sortBy} sortOrder={sortOrder} />
                 </div>
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('delivery_status')}
               >
@@ -181,7 +208,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                     </div>
                   </div>
                 </td>
-                
+
                 {/* Supplier Column */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
@@ -193,7 +220,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                     </div>
                   </div>
                 </td>
-                
+
                 {/* Date Column */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
@@ -203,7 +230,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                     {purchase.operation_type}
                   </div>
                 </td>
-                
+
                 {/* Amount Column */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
@@ -215,17 +242,17 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
                     </div>
                   )}
                 </td>
-                
+
                 {/* Payment Status Column */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <StatusBadge status={purchase.payment_status} type="payment" />
                 </td>
-                
+
                 {/* Delivery Status Column */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <StatusBadge status={purchase.delivery_status} type="delivery" />
                 </td>
-                
+
                 {/* Actions Column */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex gap-2">
@@ -263,7 +290,7 @@ const PurchasesTable: React.FC<PurchasesTableProps> = ({
           </tbody>
         </table>
       </div>
-      
+
       {/* Empty State */}
       {purchases.length === 0 && (
         <div className="text-center py-12">

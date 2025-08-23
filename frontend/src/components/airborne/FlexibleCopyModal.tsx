@@ -1,13 +1,14 @@
 // =====================================================
-// 🎯 FlexibleCopyModal.tsx - Исправленная версия без ошибок TypeScript
+// 🎯 FlexibleCopyModal.tsx - Финальная версия с реальной интеграцией
 // Файл: f/src/components/airborne/FlexibleCopyModal.tsx
 // =====================================================
 
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, X, Zap, Package, DollarSign, CreditCard, Building, AlertCircle } from 'lucide-react';
+import { Copy, Check, X, Zap, Package, DollarSign, CreditCard, Building, AlertCircle, Loader } from 'lucide-react';
+import useFlexibleCopy from '../../hooks/useFlexibleCopy';
 
 // =====================================================
-// 🔧 ИСПРАВЛЕННЫЕ ТИПЫ
+// 🔧 ТИПЫ
 // =====================================================
 
 interface Template {
@@ -34,32 +35,11 @@ interface QuickChanges {
   pricePerTon: number;
 }
 
-interface CopyRequest {
-  templateId: number;
-  templateType: 'purchase' | 'sale';
-  copyPurchase: boolean;
-  copySale: boolean;
-  copySupplierPayment: boolean;
-  copyCustomerPayment: boolean;
-  changes: {
-    quantity: number;
-    unit_price: number;
-    total_gross: number;
-  };
-}
-
 interface FlexibleCopyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCopy: (request: CopyRequest) => Promise<void>;
-  templates?: {
-    purchases: Template[];
-    sales: Template[];
-    recentPurchases: Template[];
-    recentSales: Template[];
-  };
-  isLoading?: boolean;
-  error?: string | null;
+  onSuccess?: (response: any) => void;
+  companyId?: number;
 }
 
 // =====================================================
@@ -69,11 +49,21 @@ interface FlexibleCopyModalProps {
 const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
   isOpen,
   onClose,
-  onCopy,
-  templates,
-  isLoading = false,
-  error = null
+  onSuccess,
+  companyId
 }) => {
+  // 🪝 ХУКИ
+  const {
+    isLoading,
+    error,
+    lastResponse,
+    templates,
+    copyWithFlags,
+    getTemplates,
+    clearError
+  } = useFlexibleCopy();
+
+  // 📊 СОСТОЯНИЕ
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   
   const [flags, setFlags] = useState<FlexibleCopyFlags>({
@@ -88,51 +78,33 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
     pricePerTon: 650
   });
 
-  // Mock templates для демонстрации
-  const mockTemplates: Template[] = [
-    {
-      id: 1,
-      name: 'TEMPLATE-PURCHASE-001 - ASSET BILANS SPOLKA Z O O',
-      amount: 18388.50,
-      date: '2025-08-20',
-      type: 'purchase_template',
-      client: 'ASSET BILANS SPOLKA Z O O',
-      itemsCount: 1,
-      firstProduct: 'Residues technical rapeseed oil',
-      category: 'Шаблоны приходов'
-    },
-    {
-      id: 2,
-      name: 'PUR-2025-000123 - ASSET BILANS SPOLKA Z O O',
-      amount: 18388.50,
-      date: '2025-08-22',
-      type: 'recent_purchase',
-      client: 'ASSET BILANS SPOLKA Z O O',
-      itemsCount: 1,
-      firstProduct: 'Residues technical rapeseed oil',
-      category: 'Последние приходы'
-    },
-    {
-      id: 3,
-      name: 'TEMPLATE-SALE-001 - SWAPOIL GMBH',
-      amount: 19237.20,
-      date: '2025-08-20',
-      type: 'sale_template',
-      client: 'SWAPOIL GMBH',
-      itemsCount: 1,
-      firstProduct: 'Residues technical rapeseed oil',
-      category: 'Шаблоны реализаций'
-    }
-  ];
-
-  // Инициализация выбранного шаблона
+  // 🔄 ЗАГРУЗКА ШАБЛОНОВ ПРИ ОТКРЫТИИ
   useEffect(() => {
-    if (mockTemplates.length > 0) {
-      setSelectedTemplate(mockTemplates[0]);
+    if (isOpen) {
+      getTemplates().catch(err => {
+        console.error('Failed to load templates:', err);
+      });
+      clearError();
     }
-  }, []);
+  }, [isOpen, getTemplates, clearError]);
 
-  // Обработчики событий
+  // 📋 ВЫБОР ПЕРВОГО ШАБЛОНА ПО УМОЛЧАНИЮ
+  useEffect(() => {
+    if (templates) {
+      const allTemplates = [
+        ...templates.purchases,
+        ...templates.recentPurchases,
+        ...templates.sales,
+        ...templates.recentSales
+      ];
+      
+      if (allTemplates.length > 0 && !selectedTemplate) {
+        setSelectedTemplate(allTemplates[0]);
+      }
+    }
+  }, [templates, selectedTemplate]);
+
+  // 🎯 ОБРАБОТЧИКИ СОБЫТИЙ
   const handleFlagChange = (flagName: keyof FlexibleCopyFlags, value: boolean): void => {
     setFlags(prev => ({ ...prev, [flagName]: value }));
   };
@@ -150,29 +122,50 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
   const handleCopy = async (): Promise<void> => {
     if (!selectedTemplate) return;
     
-    const request: CopyRequest = {
-      templateId: selectedTemplate.id,
-      templateType: selectedTemplate.type.includes('purchase') ? 'purchase' : 'sale',
-      copyPurchase: flags.copyPurchase,
-      copySale: flags.copySale,
-      copySupplierPayment: flags.copySupplierPayment,
-      copyCustomerPayment: flags.copyCustomerPayment,
-      changes: {
-        quantity: quickChanges.quantity,
-        unit_price: quickChanges.pricePerTon,
-        total_gross: quickChanges.quantity * quickChanges.pricePerTon * 1.23
-      }
-    };
-
     try {
-      await onCopy(request);
+      const request = {
+        templateId: selectedTemplate.id,
+        templateType: selectedTemplate.type.includes('purchase') ? 'purchase' as const : 'sale' as const,
+        copyPurchase: flags.copyPurchase,
+        copySale: flags.copySale,
+        copySupplierPayment: flags.copySupplierPayment,
+        copyCustomerPayment: flags.copyCustomerPayment,
+        changes: {
+          quantity: quickChanges.quantity,
+          unit_price: quickChanges.pricePerTon,
+          total_net: quickChanges.quantity * quickChanges.pricePerTon,
+          total_vat: quickChanges.quantity * quickChanges.pricePerTon * 0.23,
+          total_gross: quickChanges.quantity * quickChanges.pricePerTon * 1.23
+        }
+      };
+
+      const response = await copyWithFlags(request);
+      
+      // ✅ УСПЕХ - уведомляем родительский компонент
+      if (onSuccess) {
+        onSuccess(response);
+      }
+      
+      // Показываем уведомление
+      alert(`✅ Успешно скопировано ${response.stats.documentsCreated} документов! Сэкономлено: ${response.stats.timeSaved}`);
+      
+      // Переходим на созданный документ
+      if (response.navigation?.primaryAction) {
+        window.location.href = response.navigation.primaryAction;
+      }
+      
       onClose();
     } catch (err) {
       console.error('Copy failed:', err);
+      // Ошибка уже обработана в хуке
     }
   };
 
-  // Вспомогательные функции
+  const handleTemplateSelect = (template: Template): void => {
+    setSelectedTemplate(template);
+  };
+
+  // 🧮 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
   const getSelectedCount = (): number => {
     return Object.values(flags).filter(Boolean).length;
   };
@@ -181,23 +174,33 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
     return Math.round(quickChanges.quantity * quickChanges.pricePerTon * 1.23 * 100) / 100;
   };
 
-  const handleTemplateSelect = (template: Template): void => {
-    setSelectedTemplate(template);
+  const getSaleValue = (): number => {
+    return Math.round(quickChanges.quantity * 680 * 1.23 * 100) / 100;
   };
 
-  const handleCloseClick = (): void => {
-    onClose();
+  // 📋 СОЗДАНИЕ СПИСКА ВСЕХ ШАБЛОНОВ
+  const getAllTemplates = (): (Template & { category: string })[] => {
+    if (!templates) return [];
+
+    return [
+      ...templates.purchases.map(t => ({ ...t, category: 'Шаблоны приходов' })),
+      ...templates.recentPurchases.map(t => ({ ...t, category: 'Последние приходы' })),
+      ...templates.sales.map(t => ({ ...t, category: 'Шаблоны реализаций' })),
+      ...templates.recentSales.map(t => ({ ...t, category: 'Последние реализации' }))
+    ];
   };
 
-  // Если модальное окно закрыто, не рендерим ничего
+  // 🚫 ЕСЛИ МОДАЛЬНОЕ ОКНО ЗАКРЫТО
   if (!isOpen) {
     return null;
   }
 
+  const allTemplates = getAllTemplates();
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
-        {/* Заголовок */}
+      <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto">
+        {/* ЗАГОЛОВОК */}
         <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -210,91 +213,112 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={handleCloseClick}
-            className="p-2 hover:bg-white hover:bg-opacity-50 rounded-lg transition-colors"
+            onClick={onClose}
+            disabled={isLoading}
+            className="p-2 hover:bg-white hover:bg-opacity-50 rounded-lg transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* ОСНОВНОЕ СОДЕРЖИМОЕ */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-          {/* Левая колонка - Выбор шаблона */}
+          {/* ЛЕВАЯ КОЛОНКА - ВЫБОР ШАБЛОНА */}
           <div>
             <h3 className="text-lg font-semibold mb-4">📋 Выберите шаблон для копирования</h3>
             
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {mockTemplates.map((template, index) => {
-                const isSelected = selectedTemplate?.id === template.id;
-                const isFirstInCategory = index === 0 || 
-                  (mockTemplates[index - 1] && mockTemplates[index - 1].category !== template.category);
-                
-                return (
-                  <div key={template.id}>
-                    {isFirstInCategory && template.category && (
-                      <h4 className="text-sm font-medium text-gray-700 mb-2 mt-4 first:mt-0">
-                        {template.category}
-                      </h4>
-                    )}
-                    
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => handleTemplateSelect(template)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          handleTemplateSelect(template);
-                        }
-                      }}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-50 shadow-md'
-                          : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className={`font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
-                            {template.name}
-                          </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            {template.date} • {template.itemsCount} позиций
-                          </div>
-                          {template.firstProduct && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {template.firstProduct}
-                            </div>
-                          )}
-                        </div>
-                        <div className={`text-lg font-bold ml-3 ${
-                          isSelected ? 'text-blue-600' : 'text-green-600'
-                        }`}>
-                          {template.amount.toLocaleString()} €
-                        </div>
-                      </div>
-                      
-                      {isSelected && (
-                        <div className="mt-2 pt-2 border-t border-blue-200">
-                          <div className="flex items-center gap-2 text-sm text-blue-700">
-                            <Check className="w-4 h-4" />
-                            <span>Выбрано для копирования</span>
-                          </div>
-                        </div>
+            {/* ЗАГРУЗКА ШАБЛОНОВ */}
+            {isLoading && !templates && (
+              <div className="flex items-center justify-center p-8">
+                <Loader className="w-6 h-6 animate-spin text-blue-600" />
+                <span className="ml-2 text-gray-600">Загрузка шаблонов...</span>
+              </div>
+            )}
+            
+            {/* СПИСОК ШАБЛОНОВ */}
+            {allTemplates.length > 0 && (
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {allTemplates.map((template, index) => {
+                  const isSelected = selectedTemplate?.id === template.id;
+                  const isFirstInCategory = index === 0 || 
+                    (allTemplates[index - 1] && allTemplates[index - 1].category !== template.category);
+                  
+                  return (
+                    <div key={template.id}>
+                      {isFirstInCategory && (
+                        <h4 className="text-sm font-medium text-gray-700 mb-2 mt-4 first:mt-0">
+                          {template.category}
+                        </h4>
                       )}
+                      
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleTemplateSelect(template)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleTemplateSelect(template);
+                          }
+                        }}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-blue-500 bg-blue-50 shadow-md'
+                            : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className={`font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                              {template.name}
+                            </div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              {template.date} • {template.itemsCount} позиций
+                            </div>
+                            {template.firstProduct && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {template.firstProduct}
+                              </div>
+                            )}
+                          </div>
+                          <div className={`text-lg font-bold ml-3 ${
+                            isSelected ? 'text-blue-600' : 'text-green-600'
+                          }`}>
+                            {template.amount.toLocaleString()} €
+                          </div>
+                        </div>
+                        
+                        {isSelected && (
+                          <div className="mt-2 pt-2 border-t border-blue-200">
+                            <div className="flex items-center gap-2 text-sm text-blue-700">
+                              <Check className="w-4 h-4" />
+                              <span>Выбрано для копирования</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* НЕТ ШАБЛОНОВ */}
+            {!isLoading && allTemplates.length === 0 && (
+              <div className="text-center p-8 text-gray-500">
+                <p>Шаблоны не найдены.</p>
+                <p className="text-sm mt-2">Создайте базовые шаблоны для начала работы.</p>
+              </div>
+            )}
           </div>
 
-          {/* Правая колонка - Настройки копирования */}
+          {/* ПРАВАЯ КОЛОНКА - НАСТРОЙКИ КОПИРОВАНИЯ */}
           <div>
             <h3 className="text-lg font-semibold mb-4">
               🎯 Что копировать? ({getSelectedCount()} выбрано)
             </h3>
             
             <div className="space-y-3 mb-6">
-              {/* Приход товара */}
+              {/* ПРИХОД */}
               <div className={`p-4 rounded-lg border-2 transition-colors ${
                 flags.copyPurchase 
                   ? 'border-blue-500 bg-blue-50' 
@@ -316,13 +340,13 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
                       Создать документ поступления нефтепродуктов на склад
                     </p>
                     <div className="text-sm font-medium text-blue-600 mt-2">
-                      {quickChanges.quantity} т × {quickChanges.pricePerTon} € = {(quickChanges.quantity * quickChanges.pricePerTon).toLocaleString()} € + НДС
+                      {quickChanges.quantity} т × {quickChanges.pricePerTon} € = {getTotalValue().toLocaleString()} € (с НДС)
                     </div>
                   </div>
                 </label>
               </div>
 
-              {/* Реализация */}
+              {/* РЕАЛИЗАЦИЯ */}
               <div className={`p-4 rounded-lg border-2 transition-colors ${
                 flags.copySale 
                   ? 'border-green-500 bg-green-50' 
@@ -344,13 +368,13 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
                       Создать документ продажи нефтепродуктов
                     </p>
                     <div className="text-sm font-medium text-green-600 mt-2">
-                      {quickChanges.quantity} т × 680 € = {(quickChanges.quantity * 680).toLocaleString()} € + НДС
+                      {quickChanges.quantity} т × 680 € = {getSaleValue().toLocaleString()} € (с НДС)
                     </div>
                   </div>
                 </label>
               </div>
 
-              {/* Оплата поставщику */}
+              {/* ОПЛАТА ПОСТАВЩИКУ */}
               <div className={`p-3 rounded-lg border transition-colors ${
                 flags.copySupplierPayment 
                   ? 'border-red-500 bg-red-50' 
@@ -365,12 +389,12 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
                   />
                   <div className="ml-3 flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-red-600" />
-                    <span className="font-medium text-sm">Оплата ASSET BILANS</span>
+                    <span className="font-medium text-sm">Оплата ASSET BILANS SPOLKA Z O O</span>
                   </div>
                 </label>
               </div>
 
-              {/* Поступление от покупателя */}
+              {/* ПОСТУПЛЕНИЕ ОТ ПОКУПАТЕЛЯ */}
               <div className={`p-3 rounded-lg border transition-colors ${
                 flags.copyCustomerPayment 
                   ? 'border-purple-500 bg-purple-50' 
@@ -385,13 +409,13 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
                   />
                   <div className="ml-3 flex items-center gap-2">
                     <Building className="w-4 h-4 text-purple-600" />
-                    <span className="font-medium text-sm">Поступление SWAPOIL GMBH</span>
+                    <span className="font-medium text-sm">Поступление от SWAPOIL GMBH</span>
                   </div>
                 </label>
               </div>
             </div>
 
-            {/* Быстрые изменения */}
+            {/* БЫСТРЫЕ ИЗМЕНЕНИЯ */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <h4 className="font-semibold mb-3">🔧 Быстрые изменения</h4>
               
@@ -433,7 +457,7 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
               </div>
             </div>
 
-            {/* Предварительный просмотр */}
+            {/* ПРЕДВАРИТЕЛЬНЫЙ ПРОСМОТР */}
             {getSelectedCount() > 0 && (
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-6">
                 <h4 className="font-semibold text-gray-800 mb-2">📋 Будет создано:</h4>
@@ -447,7 +471,7 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
                   {flags.copySale && (
                     <div className="flex items-center gap-2">
                       <Check className="w-4 h-4 text-green-600" />
-                      <span>Реализация на {Math.round(quickChanges.quantity * 680 * 1.23 * 100) / 100} €</span>
+                      <span>Реализация на {getSaleValue().toLocaleString()} €</span>
                     </div>
                   )}
                   {flags.copySupplierPayment && (
@@ -475,7 +499,7 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
               </div>
             )}
 
-            {/* Сообщение об ошибке */}
+            {/* ОШИБКА */}
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
                 <div className="flex items-center gap-2">
@@ -487,12 +511,12 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
           </div>
         </div>
 
-        {/* Нижняя панель с кнопками */}
+        {/* НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ */}
         <div className="border-t bg-gray-50 px-6 py-4">
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={handleCloseClick}
+              onClick={onClose}
               disabled={isLoading}
               className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
@@ -519,7 +543,7 @@ const FlexibleCopyModal: React.FC<FlexibleCopyModalProps> = ({
             </button>
           </div>
           
-          {selectedTemplate && (
+          {selectedTemplate && !isLoading && (
             <div className="mt-3 text-center">
               <p className="text-sm text-gray-600">
                 Источник: <span className="font-medium">{selectedTemplate.name}</span> • 

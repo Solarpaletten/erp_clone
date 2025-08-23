@@ -7,6 +7,7 @@ const session = require('express-session');
 const { logger } = require('./config/logger');
 const prismaManager = require('./utils/prismaManager');
 
+
 // ===============================================
 // 📁 ИМПОРТЫ MIDDLEWARE
 // ===============================================
@@ -24,6 +25,8 @@ const authRoutes = require('./routes/account/authRoutes');
 const clientsRoutes = require('./routes/company/clientsRoutes');
 const dashboardRoutes = require('./routes/company/dashboardRoutes');
 const productsRoutes = require('./routes/company/productsRoutes');
+const airborneRoutes = require('./routes/company/airborneRoutes');
+
 
 // Опционально (если существуют):
 const salesRoutes = require('./routes/company/salesRoutes');
@@ -132,6 +135,13 @@ try {
   logger.info('✅ Company clients routes loaded');
 } catch (error) {
   logger.error('❌ Failed to load company clients routes:', error);
+}
+
+try {
+  app.use('/api/company/airborne', auth, companyContext, airborneRoutes);
+  logger.info('✅ Company airborne routes loaded');
+} catch (error) {
+  logger.error('❌ Failed to load company airborne routes:', error);
 }
 
 try {
