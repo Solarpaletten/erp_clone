@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.env.development
+.env.test
+tests/
+logs/
+*.log
+.git/
+README.md
+.DS_Store
+coverage/
+.github/
+docs/
+*.md
+createAdmin.js
+generateHash.js
+jest.config.js

@@ -1,0 +1,87 @@
+/* 🌙 DARK MODE ДЛЯ УСТАВШЕГО БУХГАЛТЕРА */
+/* Вдохновлено VS Code Dark Theme */
+
+:root {
+  /* ☀️ LIGHT THEME (энергичное утро) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-sidebar: #1e293b;
+  --bg-header: #f7931e;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-light: #ffffff;
+  --border-color: #e5e7eb;
+  --accent-color: #f7931e;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+.dark-theme {
+  /* 🌙 DARK THEME (комфорт для усталых глаз) */
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-sidebar: #1e1e1e;
+  --bg-header: #2d2d30;
+  --text-primary: #cccccc;
+  --text-secondary: #969696;
+  --text-light: #ffffff;
+  --border-color: #3e3e42;
+  --accent-color: #ff8c00;
+  --success-color: #4ec9b0;
+  --warning-color: #dcdcaa;
+  --error-color: #f48771;
+  --shadow: rgba(0, 0, 0, 0.3);
+}
+
+/* 🎨 ПРИМЕНЯЕМ ПЕРЕМЕННЫЕ К КОМПОНЕНТАМ */
+.theme-bg-primary { background-color: var(--bg-primary); }
+.theme-bg-secondary { background-color: var(--bg-secondary); }
+.theme-bg-sidebar { background-color: var(--bg-sidebar); }
+.theme-bg-header { background-color: var(--bg-header); }
+.theme-text-primary { color: var(--text-primary); }
+.theme-text-secondary { color: var(--text-secondary); }
+.theme-text-light { color: var(--text-light); }
+.theme-border { border-color: var(--border-color); }
+.theme-accent { color: var(--accent-color); }
+
+/* 🌙 СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ DARK MODE */
+.dark-theme .bg-white { background-color: var(--bg-secondary) !important; }
+.dark-theme .text-gray-900 { color: var(--text-primary) !important; }
+.dark-theme .text-gray-600 { color: var(--text-secondary) !important; }
+.dark-theme .border-gray-200 { border-color: var(--border-color) !important; }
+
+/* 📊 DASHBOARD КАРТОЧКИ В DARK MODE */
+.dark-theme .dashboard-card {
+  background: linear-gradient(135deg, #2d2d30 0%, #252526 100%);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+/* 📱 SIDEBAR В DARK MODE */
+.dark-theme .sidebar {
+  background: linear-gradient(180deg, #1e1e1e 0%, #252526 100%);
+  border-right: 1px solid var(--border-color);
+}
+
+/* 🧭 HEADER В DARK MODE */
+.dark-theme .header {
+  background: linear-gradient(90deg, #2d2d30 0%, #3e3e42 100%);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* 📋 ТАБЛИЦЫ В DARK MODE */
+.dark-theme table {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.dark-theme tbody tr:hover {
+  background-color: #3e3e42;
+}
+
+/* 🎨 SMOOTH TRANSITIONS */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}

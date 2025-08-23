@@ -1,0 +1,16 @@
+DATABASE_URL="postgresql://solar_user:Pass123@207.154.220.86:5433/solar?schema=public"
+
+DATABASE_SSL=true
+
+JWT_SECRET=7d5a2e3f4b1c9d8e0a6f5b2d1e4c3a9b8f7e6d5c4b3a2f1
+CORS_ORIGIN=http://localhost:3000,http://localhost:5173
+LOG_LEVEL=info
+NODE_ENV=development
+JWT_EXPIRES_IN=24h
+FRONTEND_URL=http://207.154.220.86
+
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=465
+EMAIL_USER=solarpaybank@gmail.com
+EMAIL_PASS=lbei pthl jjge efpm
+EMAIL_FROM=solarpaybank@gmail.com

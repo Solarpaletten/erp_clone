@@ -1,0 +1,32 @@
+# PostgreSQL connection
+DATABASE_URL="postgresql://solar_user:Pass123@207.154.220.86:5433/solar?schema=public"
+
+DATABASE_SSL=true
+
+# JWT settings
+JWT_SECRET=your-jwt-secret-here
+JWT_EXPIRES_IN=24h
+
+# App environment
+NODE_ENV=development
+LOG_LEVEL=info
+CORS_ORIGIN=http://localhost:3000,http://localhost:5173,http://207.154.220.86
+FRONTEND_URL=http://207.154.220.86
+
+# OpenAI
+OPENAI_API_KEY=your-openai-api-key-here
+
+# Telegram bots
+TELEGRAM_ENGLISH_BOT=your-telegram-token-here
+TELEGRAM_GERMAN_BOT=your-telegram-token-here
+TELEGRAM_PL_RU_BOT=your-telegram-token-here
+TELEGRAM_CS_RU_BOT=your-telegram-token-here
+TELEGRAM_ES_RU_BOT=your-telegram-token-here
+TELEGRAM_LV_RU_BOT=your-telegram-token-here
+
+# Email
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=465
+EMAIL_USER=your-email@example.com
+EMAIL_PASS=your-email-password-here
+EMAIL_FROM=your-email@example.com

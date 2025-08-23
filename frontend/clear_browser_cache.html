@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Browser Cache</title>
+</head>
+<body>
+    <h1>🧹 Очистка Browser Cache</h1>
+    <button onclick="clearAll()">Очистить всё</button>
+    <div id="result"></div>
+    
+    <script>
+        function clearAll() {
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Очистка кэша если поддерживается
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            document.getElementById('result').innerHTML = '✅ Кэш очищен!';
+        }
+        
+        // Автоматическая очистка
+        setTimeout(clearAll, 1000);
+    </script>
+</body>
+</html>

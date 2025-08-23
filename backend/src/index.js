@@ -1,92 +1,39 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const { PrismaClient } = require('@prisma/client');
+const app = require('./app');
+const http = require('http');
+const { logger } = require('./config/logger');
+const prismaManager = require('./utils/prismaManager');
 
-// Initialise Prisma client
-const prisma = new PrismaClient();
+// Создаем HTTP сервер
+const server = http.createServer(app);
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Глобальная переменная для доступа к сервису WebSocket из других модулей
+let webSocketService;
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-
-// Simple healthcheck
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-// Get all clients
-app.get('/clients', async (req, res) => {
+// Проверка состояния базы данных и запуск сервера
+async function startServer() {
   try {
-    const clients = await prisma.client.findMany({ orderBy: { id: 'asc' } });
-    res.json(clients);
-  } catch (error) {
-    console.error('Failed to fetch clients:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+    await prismaManager.connect();
+    logger.info('Database connected successfully');
 
-// Create a new client
-app.post('/clients', async (req, res) => {
-  try {
-    const { name, abbreviation, code, email, phone, role } = req.body;
-    const client = await prisma.client.create({
-      data: {
-        name,
-        abbreviation,
-        code,
-        email,
-        phone,
-        role
-      }
+    
+    // Вместо app.set используем глобальную переменную
+    global.webSocketService = webSocketService;
+    
+    const port = process.env.PORT || 4000;
+    server.listen(port, () => {
+      logger.info(`Server running on port ${port}`);
+      logger.info(`WebSocket server initialized`);
     });
-    res.status(201).json(client);
   } catch (error) {
-    console.error('Failed to create client:', error);
-    res.status(400).json({ error: 'Invalid request' });
+    logger.error('Failed to start server:', error);
+    process.exit(1);
   }
-});
+}
 
-// Update an existing client
-app.put('/clients/:id', async (req, res) => {
-  const { id } = req.params;
-  const { name, abbreviation, code, email, phone, role, isActive } = req.body;
-  try {
-    const updated = await prisma.client.update({
-      where: { id: parseInt(id, 10) },
-      data: {
-        name,
-        abbreviation,
-        code,
-        email,
-        phone,
-        role,
-        isActive
-      }
-    });
-    res.json(updated);
-  } catch (error) {
-    console.error('Failed to update client:', error);
-    res.status(404).json({ error: 'Client not found' });
-  }
-});
+// Экспортируем webSocketService для использования в других модулях
+module.exports = {
+  webSocketService: () => webSocketService,
+  getWebSocketService: () => webSocketService // Альтернативный способ получения сервиса
+};
 
-// Delete a client
-app.delete('/clients/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    await prisma.client.delete({ where: { id: parseInt(id, 10) } });
-    res.status(204).end();
-  } catch (error) {
-    console.error('Failed to delete client:', error);
-    res.status(404).json({ error: 'Client not found' });
-  }
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`ERP clone backend running on port ${PORT}`);
-});
+startServer();
