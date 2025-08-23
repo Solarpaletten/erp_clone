@@ -1,133 +1,196 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import SidebarGroup, { SidebarGroupItem } from './SidebarGroup';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, ChevronDown, ChevronRight } from 'lucide-react';
 
-/**
- * Боковое меню компании: закреплённые пункты с drag‑and‑drop
- * и сгруппированные разделы (Склад, Продажи/Покупки, Финансы).
- */
+// Типы секций: одиночный пункт или группа пунктов
+type MenuItem = {
+  id: string;
+  type: 'item';
+  title: string;
+  route: string;
+  icon: string;
+  badge?: string;
+};
+
+type MenuGroup = {
+  id: string;
+  type: 'group';
+  title: string;
+  items: MenuItem[];
+};
+
+type Section = MenuItem | MenuGroup;
+
 const CompanySidebar: React.FC = () => {
-  // Закреплённые пункты, которые пользователь видит сразу.
-  const [pinnedItems, setPinnedItems] = useState<SidebarGroupItem[]>([
-    { id: 'dashboard', title: 'Dashboard', route: '/dashboard', icon: '📊' },
-    { id: 'clients', title: 'Clients', route: '/clients', icon: '👥' },
-    { id: 'dashka', title: 'Dashka', route: '/dashka', icon: '🎯', badge: 'HOT' },
-    { id: 'tabbook', title: 'TAB‑Бухгалтерия', route: '/tabbook', icon: '⚡', badge: 'NEW' },
-    { id: 'cloudide', title: 'Cloud IDE', route: '/cloudide', icon: '☁️', badge: 'BETA' },
-    { id: 'inventory-flow', title: 'Товарооборот', route: '/inventory-flow', icon: '🎯', badge: 'NEW' },
+  // Универсальный список секций
+  const [sections, setSections] = useState<Section[]>([
+    { id: 'dashboard', type: 'item', title: 'Dashboard', route: '/dashboard', icon: '📊' },
+    { id: 'clients', type: 'item', title: 'Clients', route: '/clients', icon: '👥' },
+    { id: 'dashka', type: 'item', title: 'Dashka', route: '/dashka', icon: '🎯', badge: 'HOT' },
+    {
+      id: 'warehouseGroup',
+      type: 'group',
+      title: 'Склад',
+      items: [
+        { id: 'products', type: 'item', title: 'Products', route: '/products', icon: '📦' },
+        { id: 'warehouse', type: 'item', title: 'Warehouse', route: '/warehouse', icon: '🏭' },
+      ],
+    },
+    {
+      id: 'salesGroup',
+      type: 'group',
+      title: 'Продажи и покупки',
+      items: [
+        { id: 'sales', type: 'item', title: 'Sales', route: '/sales', icon: '💰' },
+        { id: 'purchases', type: 'item', title: 'Purchases', route: '/purchases', icon: '🛒' },
+      ],
+    },
+    {
+      id: 'financeGroup',
+      type: 'group',
+      title: 'Финансы',
+      items: [
+        { id: 'accounts', type: 'item', title: 'Chart of Accounts', route: '/chart-of-accounts', icon: '📋' },
+        { id: 'banking', type: 'item', title: 'Banking', route: '/banking', icon: '🏦' },
+      ],
+    },
+    { id: 'tabbook', type: 'item', title: 'TAB‑Бухгалтерия', route: '/tabbook', icon: '⚡', badge: 'NEW' },
+    { id: 'cloudide', type: 'item', title: 'Cloud IDE', route: '/cloudide', icon: '☁️', badge: 'BETA' },
+    { id: 'inventory-flow', type: 'item', title: 'Товарооборот', route: '/inventory-flow', icon: '🎯', badge: 'NEW' },
   ]);
 
-  // Состояние для drag‑and‑drop
-  const [draggedItem, setDraggedItem] = useState<SidebarGroupItem | null>(null);
-  const [dragOverItem, setDragOverItem] = useState<SidebarGroupItem | null>(null);
+  // Состояния для drag‑and‑drop
+  const [draggedSection, setDraggedSection] = useState<Section | null>(null);
+  const [dragOverSection, setDragOverSection] = useState<Section | null>(null);
 
-  const handleDragStart = (e: React.DragEvent, item: SidebarGroupItem) => {
-    setDraggedItem(item);
+  // Состояние для разворачивания групп
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    warehouseGroup: true,
+    salesGroup: true,
+    financeGroup: true,
+  });
+
+  const handleDragStart = (e: React.DragEvent, section: Section) => {
+    setDraggedSection(section);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e: React.DragEvent, item: SidebarGroupItem) => {
+  const handleDragOver = (e: React.DragEvent, section: Section) => {
     e.preventDefault();
-    setDragOverItem(item);
+    setDragOverSection(section);
   };
 
   const handleDragLeave = () => {
-    setDragOverItem(null);
+    setDragOverSection(null);
   };
 
-  const handleDrop = (e: React.DragEvent, targetItem: SidebarGroupItem) => {
+  const handleDrop = (e: React.DragEvent, targetSection: Section) => {
     e.preventDefault();
-    if (!draggedItem || draggedItem.id === targetItem.id) {
-      setDraggedItem(null);
-      setDragOverItem(null);
+    if (!draggedSection || draggedSection.id === targetSection.id) {
+      setDraggedSection(null);
+      setDragOverSection(null);
       return;
     }
-    const newItems = [...pinnedItems];
-    const draggedIndex = newItems.findIndex((it) => it.id === draggedItem.id);
-    const targetIndex = newItems.findIndex((it) => it.id === targetItem.id);
-    const [removed] = newItems.splice(draggedIndex, 1);
-    newItems.splice(targetIndex, 0, removed);
-    setPinnedItems(newItems);
-    setDraggedItem(null);
-    setDragOverItem(null);
+    const newSections = [...sections];
+    const fromIndex = newSections.findIndex((s) => s.id === draggedSection.id);
+    const toIndex = newSections.findIndex((s) => s.id === targetSection.id);
+    newSections.splice(fromIndex, 1);
+    newSections.splice(toIndex, 0, draggedSection);
+    setSections(newSections);
+    setDraggedSection(null);
+    setDragOverSection(null);
   };
 
-  // Группы, объединяющие родственные разделы
-  const groups = [
-    {
-      title: 'Склад',
-      items: [
-        { id: 'products', title: 'Products', route: '/products', icon: '📦' },
-        { id: 'warehouse', title: 'Warehouse', route: '/warehouse', icon: '🏭' },
-      ],
-    },
-    {
-      title: 'Продажи и покупки',
-      items: [
-        { id: 'sales', title: 'Sales', route: '/sales', icon: '💰' },
-        { id: 'purchases', title: 'Purchases', route: '/purchases', icon: '🛒' },
-      ],
-    },
-    {
-      title: 'Финансы',
-      items: [
-        { id: 'accounts', title: 'Chart of Accounts', route: '/chart-of-accounts', icon: '📋' },
-        { id: 'banking', title: 'Banking', route: '/banking', icon: '🏦' },
-      ],
-    },
-  ];
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
+  };
 
   return (
     <nav className="flex flex-col w-60 bg-slate-800 text-white min-h-screen">
-      {/* Логотип/название */}
+      {/* Шапка сайдбара */}
       <div className="p-4 text-2xl font-bold border-b border-slate-700">Solar ERP</div>
 
-      {/* Закреплённые пункты с drag‑and‑drop */}
       <div className="flex-1 overflow-y-auto">
-        {pinnedItems.map((item) => (
+        {sections.map((section) => (
           <div
-            key={item.id}
-            className={`flex items-center ${
-              dragOverItem?.id === item.id ? 'border-t-2 border-orange-500' : ''
-            }`}
+            key={section.id}
+            className={`${
+              dragOverSection?.id === section.id ? 'border-t-2 border-orange-500' : ''
+            } flex flex-col`}
             draggable
-            onDragStart={(e) => handleDragStart(e, item)}
-            onDragOver={(e) => handleDragOver(e, item)}
+            onDragStart={(e) => handleDragStart(e, section)}
+            onDragOver={(e) => handleDragOver(e, section)}
             onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, item)}
+            onDrop={(e) => handleDrop(e, section)}
           >
-            <div className="p-2 cursor-grab hover:bg-slate-700">
-              <GripVertical className="w-4 h-4 text-slate-400" />
-            </div>
-            <NavLink
-              to={item.route}
-              className={({ isActive }) =>
-                `flex-1 flex items-center p-3 hover:bg-slate-700 transition-colors ${
-                  isActive ? 'bg-slate-700 border-r-2 border-orange-500' : ''
-                }`
-              }
-            >
-              <span className="mr-2">{item.icon}</span>
-              <span>{item.title}</span>
-              {item.badge && (
-                <span className="ml-2 px-2 py-1 text-xs bg-orange-500 text-white rounded-full">
-                  {item.badge}
-                </span>
+            <div className="flex items-center">
+              {/* Маркер для перемещения */}
+              <div className="p-2 cursor-grab hover:bg-slate-700">
+                <GripVertical className="w-4 h-4 text-slate-400" />
+              </div>
+
+              {section.type === 'item' ? (
+                <NavLink
+                  to={section.route}
+                  className={({ isActive }) =>
+                    `flex-1 flex items-center p-3 hover:bg-slate-700 transition-colors ${
+                      isActive ? 'bg-slate-700 border-r-2 border-orange-500' : ''
+                    }`
+                  }
+                >
+                  <span className="mr-2">{section.icon}</span>
+                  <span>{section.title}</span>
+                  {section.badge && (
+                    <span className="ml-2 px-2 py-1 text-xs bg-orange-500 text-white rounded-full">
+                      {section.badge}
+                    </span>
+                  )}
+                </NavLink>
+              ) : (
+                // Заголовок группы
+                <button
+                  onClick={() => toggleGroup(section.id)}
+                  className="flex-1 flex items-center p-3 text-left hover:bg-slate-700 transition-colors"
+                >
+                  <span className="mr-2">{section.title}</span>
+                  <span className="ml-auto">
+                    {expandedGroups[section.id] ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                  </span>
+                </button>
               )}
-            </NavLink>
+            </div>
+
+            {/* Подменю группы */}
+            {section.type === 'group' && expandedGroups[section.id] && (
+              <div className="ml-8">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.id}
+                    to={item.route}
+                    className={({ isActive }) =>
+                      `flex items-center p-2 hover:bg-slate-700 transition-colors ${
+                        isActive ? 'bg-slate-700 border-r-2 border-orange-500' : ''
+                      }`
+                    }
+                  >
+                    <span className="mr-2">{item.icon}</span>
+                    <span>{item.title}</span>
+                  </NavLink>
+                ))}
+              </div>
+            )}
           </div>
         ))}
-
-        {/* Группы меню */}
-        <div className="mt-4">
-          {groups.map((group) => (
-            <SidebarGroup key={group.title} title={group.title} items={group.items} />
-          ))}
-        </div>
       </div>
 
-      {/* Нижняя часть – возврат к выбору компании */}
+      {/* Кнопка возврата к выбору компании */}
       <div className="mt-auto p-3 border-t border-slate-700">
         <button
           onClick={() => {
