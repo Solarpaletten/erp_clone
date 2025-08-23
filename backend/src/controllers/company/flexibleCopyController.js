@@ -467,8 +467,16 @@ const quickCopy = async (req, res) => {
   }
 };
 
+const { getTemplatesForQuickAccess } = require('./templatesController');
+
+const getTemplatesForFlexibleCopy = (req, res) => {
+  // Можно переиспользовать логику, если она подходит
+  return getTemplatesForQuickAccess(req, res);
+};
+
 module.exports = {
   flexibleCopy,
   getRecentDocuments,
-  quickCopy
+  quickCopy,
+  getTemplatesForFlexibleCopy
 };
