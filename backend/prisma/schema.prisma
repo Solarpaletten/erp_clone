@@ -248,7 +248,7 @@ model clients {
   id         Int @id @default(autoincrement())
   company_id Int
 
-  name         String  @db.VarChar(200)
+  name         String  @db.VarChar(255)
   abbreviation String? @db.VarChar(100)
   code         String? @db.VarChar(50)
 
@@ -262,6 +262,7 @@ model clients {
   is_juridical Boolean    @default(true)
   is_active    Boolean    @default(true)
   is_foreigner Boolean    @default(false)
+  is_template Boolean @default(false)
 
   country        String? @db.VarChar(100)
   legal_address  String? @db.Text
@@ -388,7 +389,8 @@ model products {
   current_stock Decimal? @db.Decimal(10, 2)
   is_active     Boolean  @default(true)
   is_service    Boolean  @default(false)
-
+  is_template   Boolean  @default(false)
+  
   // Партийный учёт
   batch_tracking Boolean @default(true)
 
@@ -423,6 +425,7 @@ model sales {
   client_id        Int
   warehouse_id     Int?
   sales_manager_id Int?
+  is_template Boolean @default(false)
 
   subtotal        Decimal  @db.Decimal(15, 2)
   vat_amount      Decimal  @default(0) @db.Decimal(15, 2)
@@ -491,6 +494,7 @@ model purchases {
   supplier_id         Int
   warehouse_id        Int?
   purchase_manager_id Int?
+  is_template Boolean @default(false)
 
   subtotal     Decimal  @db.Decimal(15, 2)
   vat_amount   Decimal  @default(0) @db.Decimal(15, 2)
@@ -503,7 +507,7 @@ model purchases {
 
   created_by Int
   created_at DateTime @default(now())
-  updated_by Int? // ← ДОБАВЬ ЭТО ПОЛЕ
+  updated_by Int?
   updated_at DateTime @updatedAt
 
   company          companies        @relation(fields: [company_id], references: [id], onDelete: Cascade)
@@ -559,6 +563,7 @@ model warehouses {
   manager_id  Int?
   status      WarehouseStatus @default(ACTIVE)
   is_main     Boolean         @default(false)
+  is_template Boolean @default(false)
 
   created_by Int
   created_at DateTime @default(now())
