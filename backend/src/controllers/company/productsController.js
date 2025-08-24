@@ -1,40 +1,50 @@
-// b/src/controllers/company/productsController.js - ИСПРАВЛЕНО ПОД РЕАЛЬНУЮ СХЕМУ
+// =====================================================
+// 🔧 ПОЛНЫЙ PRODUCTS CONTROLLER - ВСЕ CRUD ОПЕРАЦИИ
+// Файл: b/src/controllers/company/productsController.js
+// =====================================================
+
+const prismaManager = require('../../utils/prismaManager');
 const { logger } = require('../../config/logger');
 
-// 📋 GET /api/company/products - Получить все товары компании
+// 📋 GET /api/company/products - Получить все товары
 const getAllProducts = async (req, res) => {
   try {
-    const companyId = req.companyContext?.companyId;
+    const companyId = req.headers['x-company-id'];
     
     if (!companyId) {
-      return res.status(400).json({ 
-        error: 'Company context required',
-        hint: 'Add X-Company-Id header'
+      return res.status(400).json({
+        success: false,
+        error: 'Company ID required'
       });
     }
-    
+
     logger.info(`🔍 Fetching products for company: ${companyId}`);
-    
+
     const products = await req.prisma.products.findMany({
       where: {
         company_id: parseInt(companyId)
       },
       orderBy: {
         created_at: 'desc'
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            email: true
+          }
+        }
       }
     });
-    
-    logger.info(`📋 Found ${products.length} products for company ${companyId}`);
-    
+
+    logger.info(`✅ Found ${products.length} products for company ${companyId}`);
+
     res.json({
       success: true,
-      products: products,
-      pagination: {
-        page: 1,
-        limit: 50, 
-        total: products.length,
-        pages: Math.ceil(products.length / 50)
-      },
+      products,
+      count: products.length,
       companyId: parseInt(companyId)
     });
 
@@ -42,152 +52,8 @@ const getAllProducts = async (req, res) => {
     logger.error('❌ Error fetching products:', error);
     res.status(500).json({
       success: false,
-      error: 'Error fetching products',
-      details: error.message
-    });
-  }
-};
-
-// ➕ POST /api/company/products - Создать новый товар
-const createProduct = async (req, res) => {
-  try {
-    const companyId = req.companyContext?.companyId;
-    const userId = req.user?.id || 1;
-    
-    const {
-      name,
-      code,
-      description,
-      unit,              // ← ПРАВИЛЬНОЕ ПОЛЕ
-      price,             // ← ПРАВИЛЬНОЕ ПОЛЕ (не sale_price)
-      cost_price,
-      vat_rate,
-      category,
-      subcategory,
-      min_stock,         // ← ПРАВИЛЬНОЕ ПОЛЕ (не min_stock_level)
-      current_stock,     // ← ПРАВИЛЬНОЕ ПОЛЕ (не stock_quantity)
-      is_service,
-      currency = 'EUR'
-    } = req.body;
-
-    if (!companyId) {
-      return res.status(400).json({ 
-        error: 'Company context required'
-      });
-    }
-
-    // Валидация обязательных полей согласно схеме
-    if (!name || !code || !unit || !price) {
-      return res.status(400).json({
-        success: false,
-        error: 'Name, code, unit and price are required'
-      });
-    }
-
-    logger.info(`➕ Creating product: ${name} for company: ${companyId}`);
-
-    // Создаем товар с правильными полями
-    const product = await req.prisma.products.create({
-      data: {
-        company_id: parseInt(companyId),
-        created_by: parseInt(userId),        // ← ПРАВИЛЬНОЕ ПОЛЕ (не user_id)
-        
-        // Основные поля
-        code: code.trim().toUpperCase(),
-        name: name.trim(),
-        description: description?.trim() || null,
-        
-        // Единица измерения и цены
-        unit: unit || 'pcs',
-        price: parseFloat(price),            // ← ОБЯЗАТЕЛЬНОЕ
-        cost_price: cost_price ? parseFloat(cost_price) : null,
-        currency: currency || 'EUR',
-        vat_rate: vat_rate ? parseFloat(vat_rate) : null,
-        
-        // Категории
-        category: category?.trim() || null,
-        subcategory: subcategory?.trim() || null,
-        
-        // Остатки
-        min_stock: min_stock ? parseFloat(min_stock) : null,
-        current_stock: current_stock ? parseFloat(current_stock) : null,
-        
-        // Флаги
-        is_active: true,
-        is_service: Boolean(is_service) || false
-      }
-    });
-
-    logger.info(`✅ Product created: ${product.name} (ID: ${product.id})`);
-
-    res.status(201).json({
-      success: true,
-      message: 'Product created successfully',
-      product: product,
-      companyId: parseInt(companyId)
-    });
-
-  } catch (error) {
-    logger.error('❌ Error creating product:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error creating product',
-      details: error.message
-    });
-  }
-};
-
-// 📊 GET /api/company/products/stats - Статистика товаров
-const getProductsStats = async (req, res) => {
-  try {
-    const companyId = req.companyContext?.companyId;
-
-    if (!companyId) {
-      return res.status(400).json({ 
-        error: 'Company context required'
-      });
-    }
-
-    logger.info(`📊 Fetching products stats for company: ${companyId}`);
-
-    // Простая статистика без сложных Prisma queries
-    const products = await req.prisma.products.findMany({
-      where: { company_id: parseInt(companyId) }
-    });
-
-    const stats = {
-      total: products.length,
-      active: products.filter(p => p.is_active).length,
-      inactive: products.filter(p => !p.is_active).length,
-      services: products.filter(p => p.is_service).length,
-      goods: products.filter(p => !p.is_service).length,
-      lowStock: products.filter(p => {
-        const stock = parseFloat(p.current_stock || 0);
-        const minStock = parseFloat(p.min_stock || 0);
-        return stock <= minStock && minStock > 0;
-      }).length,
-      totalStockQuantity: products.reduce((sum, p) => sum + parseFloat(p.current_stock || 0), 0),
-      totalValue: products.reduce((sum, p) => sum + (parseFloat(p.current_stock || 0) * parseFloat(p.price || 0)), 0),
-      categories: [...new Set(products.map(p => p.category).filter(Boolean))].map(cat => ({
-        name: cat,
-        count: products.filter(p => p.category === cat).length
-      }))
-    };
-
-    logger.info(`✅ Products stats calculated for company ${companyId}`);
-
-    res.json({
-      success: true,
-      stats,
-      companyId: parseInt(companyId)
-    });
-
-  } catch (error) {
-    logger.error('❌ Error fetching products stats:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error fetching products statistics',
-      details: error.message
+      error: 'Internal server error',
+      message: error.message
     });
   }
 };
@@ -195,17 +61,27 @@ const getProductsStats = async (req, res) => {
 // 📄 GET /api/company/products/:id - Получить товар по ID
 const getProductById = async (req, res) => {
   try {
-    const companyId = req.companyContext?.companyId;
+    const companyId = req.headers['x-company-id'];
     const productId = parseInt(req.params.id);
 
     if (!companyId) {
-      return res.status(400).json({ error: 'Company context required' });
+      return res.status(400).json({ error: 'Company ID required' });
     }
 
     const product = await req.prisma.products.findFirst({
       where: {
         id: productId,
         company_id: parseInt(companyId)
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            email: true
+          }
+        }
       }
     });
 
@@ -232,20 +108,524 @@ const getProductById = async (req, res) => {
   }
 };
 
+// ➕ POST /api/company/products - Создать новый товар
+const createProduct = async (req, res) => {
+  try {
+    const companyId = req.headers['x-company-id'];
+    const userId = req.user.id;
+    
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Company ID required'
+      });
+    }
+
+    logger.info(`➕ Creating product for company: ${companyId}`, req.body);
+
+    const {
+      name,
+      code,
+      description,
+      unit,
+      price,
+      cost_price,
+      currency,
+      vat_rate,
+      category,
+      subcategory,
+      min_stock,
+      current_stock,
+      is_service,
+      batch_tracking
+    } = req.body;
+
+    // Проверка на дублирование кода товара
+    if (code) {
+      const existingProduct = await req.prisma.products.findFirst({
+        where: {
+          company_id: parseInt(companyId),
+          code: code
+        }
+      });
+
+      if (existingProduct) {
+        return res.status(409).json({
+          success: false,
+          error: 'Product code already exists',
+          message: 'Товар с таким кодом уже существует'
+        });
+      }
+    }
+
+    // Создание товара
+    const product = await req.prisma.products.create({
+      data: {
+        company_id: parseInt(companyId),
+        name: name,
+        code: code || `AUTO-${Date.now()}`,
+        description: description || '',
+        unit: unit || 't',
+        price: parseFloat(price) || 0,
+        cost_price: parseFloat(cost_price) || 0,
+        currency: currency || 'EUR',
+        vat_rate: parseFloat(vat_rate) || 23,
+        category: category || 'Нефтепродукты',
+        subcategory: subcategory || '',
+        min_stock: parseFloat(min_stock) || 0,
+        current_stock: parseFloat(current_stock) || 0,
+        is_active: true,
+        is_service: Boolean(is_service),
+        is_template: false,
+        batch_tracking: Boolean(batch_tracking),
+        created_by: userId
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    logger.info(`✅ Product created successfully: ${product.name} (ID: ${product.id})`);
+
+    res.status(201).json({
+      success: true,
+      product,
+      message: 'Product created successfully',
+      companyId: parseInt(companyId)
+    });
+
+  } catch (error) {
+    logger.error('❌ Error creating product:', error);
+    
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate product code',
+        message: 'Товар с таким кодом уже существует'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+};
+
 // ✏️ PUT /api/company/products/:id - Обновить товар
 const updateProduct = async (req, res) => {
-  res.json({
-    success: false,
-    error: 'Update not implemented yet'
-  });
+  try {
+    const companyId = req.headers['x-company-id'];
+    const productId = parseInt(req.params.id);
+    const userId = req.user.id;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Company ID required'
+      });
+    }
+
+    logger.info(`✏️ Updating product ${productId} for company: ${companyId}`);
+
+    // Проверяем существование товара
+    const existingProduct = await req.prisma.products.findFirst({
+      where: {
+        id: productId,
+        company_id: parseInt(companyId)
+      }
+    });
+
+    if (!existingProduct) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+
+    const {
+      name,
+      code,
+      description,
+      unit,
+      price,
+      cost_price,
+      currency,
+      vat_rate,
+      category,
+      subcategory,
+      min_stock,
+      current_stock,
+      is_service,
+      is_active,
+      batch_tracking
+    } = req.body;
+
+    // Проверка на дублирование кода (если код изменился)
+    if (code && code !== existingProduct.code) {
+      const duplicateProduct = await req.prisma.products.findFirst({
+        where: {
+          company_id: parseInt(companyId),
+          code: code,
+          NOT: {
+            id: productId
+          }
+        }
+      });
+
+      if (duplicateProduct) {
+        return res.status(409).json({
+          success: false,
+          error: 'Product code already exists',
+          message: 'Товар с таким кодом уже существует'
+        });
+      }
+    }
+
+    // Обновляем товар
+    const updatedProduct = await req.prisma.products.update({
+      where: {
+        id: productId
+      },
+      data: {
+        name: name || existingProduct.name,
+        code: code || existingProduct.code,
+        description: description !== undefined ? description : existingProduct.description,
+        unit: unit || existingProduct.unit,
+        price: price !== undefined ? parseFloat(price) : existingProduct.price,
+        cost_price: cost_price !== undefined ? parseFloat(cost_price) : existingProduct.cost_price,
+        currency: currency || existingProduct.currency,
+        vat_rate: vat_rate !== undefined ? parseFloat(vat_rate) : existingProduct.vat_rate,
+        category: category !== undefined ? category : existingProduct.category,
+        subcategory: subcategory !== undefined ? subcategory : existingProduct.subcategory,
+        min_stock: min_stock !== undefined ? parseFloat(min_stock) : existingProduct.min_stock,
+        current_stock: current_stock !== undefined ? parseFloat(current_stock) : existingProduct.current_stock,
+        is_service: is_service !== undefined ? Boolean(is_service) : existingProduct.is_service,
+        is_active: is_active !== undefined ? Boolean(is_active) : existingProduct.is_active,
+        batch_tracking: batch_tracking !== undefined ? Boolean(batch_tracking) : existingProduct.batch_tracking,
+        updated_at: new Date()
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    logger.info(`✅ Product updated successfully: ${updatedProduct.name} (ID: ${updatedProduct.id})`);
+
+    res.json({
+      success: true,
+      product: updatedProduct,
+      message: 'Product updated successfully',
+      companyId: parseInt(companyId)
+    });
+
+  } catch (error) {
+    logger.error('❌ Error updating product:', error);
+    
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate product code',
+        message: 'Товар с таким кодом уже существует'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
 };
 
 // 🗑️ DELETE /api/company/products/:id - Удалить товар
 const deleteProduct = async (req, res) => {
-  res.json({
-    success: false,
-    error: 'Delete not implemented yet'
-  });
+  try {
+    const companyId = req.headers['x-company-id'];
+    const productId = parseInt(req.params.id);
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Company ID required'
+      });
+    }
+
+    logger.info(`🗑️ Deleting product ${productId} for company: ${companyId}`);
+
+    // Проверяем существование товара
+    const existingProduct = await req.prisma.products.findFirst({
+      where: {
+        id: productId,
+        company_id: parseInt(companyId)
+      }
+    });
+
+    if (!existingProduct) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+
+    // Проверяем, не используется ли товар в документах
+    const purchaseItems = await req.prisma.purchase_items.findFirst({
+      where: {
+        product_id: productId
+      }
+    });
+
+    const saleItems = await req.prisma.sale_items.findFirst({
+      where: {
+        product_id: productId
+      }
+    });
+
+    if (purchaseItems || saleItems) {
+      // Если товар используется, то мягкое удаление (деактивация)
+      const deactivatedProduct = await req.prisma.products.update({
+        where: {
+          id: productId
+        },
+        data: {
+          is_active: false,
+          updated_at: new Date()
+        }
+      });
+
+      logger.info(`⚠️ Product deactivated (soft delete): ${existingProduct.name}`);
+
+      return res.json({
+        success: true,
+        message: 'Product deactivated (used in documents)',
+        product: deactivatedProduct,
+        companyId: parseInt(companyId),
+        action: 'deactivated'
+      });
+    }
+
+    // Жёсткое удаление, если товар нигде не используется
+    await req.prisma.products.delete({
+      where: {
+        id: productId
+      }
+    });
+
+    logger.info(`🗑️ Product permanently deleted: ${existingProduct.name} (ID: ${productId})`);
+
+    res.json({
+      success: true,
+      message: 'Product deleted successfully',
+      companyId: parseInt(companyId),
+      action: 'deleted'
+    });
+
+  } catch (error) {
+    logger.error('❌ Error deleting product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+};
+
+// 📊 GET /api/company/products/stats - Статистика товаров
+const getProductsStats = async (req, res) => {
+  try {
+    const companyId = req.headers['x-company-id'];
+    
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Company ID required'
+      });
+    }
+
+    logger.info(`📊 Fetching products stats for company: ${companyId}`);
+
+    // Простая статистика без сложных Prisma queries
+    const products = await req.prisma.products.findMany({
+      where: {
+        company_id: parseInt(companyId)
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        cost_price: true,
+        current_stock: true,
+        min_stock: true,
+        is_active: true,
+        is_service: true,
+        category: true
+      }
+    });
+
+    // Подсчет статистики
+    const stats = products.reduce((acc, product) => {
+      acc.total++;
+      
+      if (product.is_active) {
+        acc.active++;
+      } else {
+        acc.inactive++;
+      }
+      
+      if (product.is_service) {
+        acc.services++;
+      } else {
+        acc.goods++;
+      }
+      
+      if (product.current_stock <= product.min_stock) {
+        acc.lowStock++;
+      }
+      
+      acc.totalValue += (parseFloat(product.current_stock || 0) * parseFloat(product.price || 0));
+      
+      return acc;
+    }, {
+      total: 0,
+      active: 0,
+      inactive: 0,
+      services: 0,
+      goods: 0,
+      lowStock: 0,
+      totalValue: 0
+    });
+
+    // Группировка по категориям
+    const categoriesStats = {};
+    products.forEach(product => {
+      const category = product.category || 'Без категории';
+      if (!categoriesStats[category]) {
+        categoriesStats[category] = 0;
+      }
+      categoriesStats[category]++;
+    });
+
+    logger.info(`✅ Products stats calculated for company ${companyId}`);
+
+    res.json({
+      success: true,
+      stats: {
+        overview: stats,
+        categories: categoriesStats,
+        companyId: parseInt(companyId),
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    logger.error('❌ Error fetching products stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+};
+
+// 📋 Копирование товара (для "Воздушной бухгалтерии")
+const copyProduct = async (req, res) => {
+  try {
+    const companyId = req.headers['x-company-id'];
+    const productId = parseInt(req.params.id);
+    const userId = req.user.id;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Company ID required'
+      });
+    }
+
+    logger.info(`🔄 Copying product ${productId} for company: ${companyId}`);
+
+    // Находим оригинальный товар
+    const originalProduct = await req.prisma.products.findFirst({
+      where: {
+        id: productId,
+        company_id: parseInt(companyId)
+      }
+    });
+
+    if (!originalProduct) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+
+    // Создаем копию
+    const copiedProduct = await req.prisma.products.create({
+      data: {
+        company_id: parseInt(companyId),
+        name: `${originalProduct.name} (Копия)`,
+        code: `${originalProduct.code}-COPY-${Date.now()}`,
+        description: originalProduct.description,
+        unit: originalProduct.unit,
+        price: originalProduct.price,
+        cost_price: originalProduct.cost_price,
+        currency: originalProduct.currency,
+        vat_rate: originalProduct.vat_rate,
+        category: originalProduct.category,
+        subcategory: originalProduct.subcategory,
+        min_stock: originalProduct.min_stock,
+        current_stock: 0, // Обнуляем остатки в копии
+        is_active: true,
+        is_service: originalProduct.is_service,
+        is_template: false,
+        batch_tracking: originalProduct.batch_tracking,
+        created_by: userId
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    logger.info(`✅ Product copied successfully: ${copiedProduct.name} (ID: ${copiedProduct.id})`);
+
+    res.json({
+      success: true,
+      product: copiedProduct,
+      message: '⚡ Товар скопирован за 10 секунд!',
+      companyId: parseInt(companyId),
+      timeSaved: '5 минут',
+      originalId: productId
+    });
+
+  } catch (error) {
+    logger.error('❌ Error copying product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
 };
 
 module.exports = {
@@ -254,5 +634,6 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
-  getProductsStats
+  getProductsStats,
+  copyProduct // ← Новая функция для "Воздушной бухгалтерии"
 };

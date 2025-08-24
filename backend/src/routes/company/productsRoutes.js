@@ -1,4 +1,8 @@
-// b/src/routes/company/productsRoutes.js
+// =====================================================
+// 🛣️ ПОЛНЫЕ PRODUCTS ROUTES - ВСЕ CRUD + КОПИРОВАНИЕ
+// Файл: b/src/routes/company/productsRoutes.js
+// =====================================================
+
 const express = require('express');
 const router = express.Router();
 const productsController = require('../../controllers/company/productsController');
@@ -30,6 +34,13 @@ router.put('/:id', productsController.updateProduct);
 router.delete('/:id', productsController.deleteProduct);
 
 // ===============================================
+// 🚀 "ВОЗДУШНАЯ БУХГАЛТЕРИЯ" - КОПИРОВАНИЕ
+// ===============================================
+
+// 🔄 POST /api/company/products/:id/copy - Скопировать товар
+router.post('/:id/copy', productsController.copyProduct);
+
+// ===============================================
 // 🧪 TEST ROUTE
 // ===============================================
 
@@ -44,7 +55,14 @@ router.get('/test/health', (req, res) => {
       'GET /api/company/products/:id - Get product by ID',
       'POST /api/company/products - Create new product',
       'PUT /api/company/products/:id - Update product',
-      'DELETE /api/company/products/:id - Delete product'
+      'DELETE /api/company/products/:id - Delete product',
+      '🚀 POST /api/company/products/:id/copy - Copy product (AIRBORNE ACCOUNTING)'
+    ],
+    revolutionaryFeatures: [
+      '⚡ Мгновенное копирование товаров',
+      '🛡️ Умное удаление (мягкое/жёсткое)',
+      '📊 Детальная статистика',
+      '🔄 "Воздушная бухгалтерия" интеграция'
     ]
   });
 });
