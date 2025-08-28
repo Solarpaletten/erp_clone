@@ -148,84 +148,75 @@ const ProductsPage: React.FC = () => {
   // ===============================================
   // 🎨 RENDER
   // ===============================================
-
-  return (
-    
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="bg-blue-500 text-white p-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold">📦 Products Management</h1>
-            <p className="text-blue-100 text-sm">Manage your product catalog</p>
+    return (
+      <CompanyLayout>
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="bg-blue-500 text-white p-4 flex justify-between items-center">
+            {/* ... ваш header ... */}
           </div>
-          <button className="bg-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors">
-            Support (FAQ: 15)
-          </button>
-        </div>
-
-        {/* Stats */}
-        {stats && <ProductsStats stats={stats} />}
-
-        {/* Toolbar */}
-        <ProductsToolbar 
-          onAddProduct={() => setShowAddModal(true)}
-          onSearch={setSearchTerm}
-          onCategoryFilter={setCategoryFilter}
-          searchTerm={searchTerm}
-          categoryFilter={categoryFilter}
-          totalProducts={products.length}
-        />
-
-        {/* Error Display */}
-        {error && (
-          <div className="mx-4 my-2 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            <div className="flex items-center">
-              <span className="mr-2">⚠️</span>
-              {error}
+  
+          {/* Stats */}
+          {stats && <ProductsStats stats={stats} />}
+  
+          {/* Toolbar */}
+          <ProductsToolbar 
+            onAddProduct={() => setShowAddModal(true)}
+            onSearch={setSearchTerm}
+            onCategoryFilter={setCategoryFilter}
+            searchTerm={searchTerm}
+            categoryFilter={categoryFilter}
+            totalProducts={products.length}
+          />
+  
+          {/* Error Display */}
+          {error && (
+            <div className="mx-4 my-2 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              <div className="flex items-center">
+                <span className="mr-2">⚠️</span>
+                {error}
+              </div>
             </div>
+          )}
+  
+          {/* Table */}
+          <div className="flex-1 overflow-hidden">
+            <ProductsTable 
+              products={products}
+              loading={loading}
+              onRefresh={fetchProducts}
+              onEdit={(product) => {
+                setEditingProduct(product);
+                setShowEditModal(true);
+              }}
+              onDelete={handleDeleteProduct}
+            />
           </div>
-        )}
-
-        {/* Table */}
-        <div className="flex-1 overflow-hidden">
-          <ProductsTable 
-            products={products}
-            loading={loading}
-            onRefresh={fetchProducts}
-            onEdit={(product) => {
-              setEditingProduct(product);
-              setShowEditModal(true);
-            }}
-            onDelete={handleDeleteProduct}
-          />
+  
+          {/* Modals */}
+          {showAddModal && (
+            <AddProductModal
+              onClose={() => setShowAddModal(false)}
+              onSubmit={handleCreateProduct}
+            />
+          )}
+  
+          {showEditModal && editingProduct && (
+            <EditProductModal
+              product={editingProduct}
+              onClose={() => {
+                setShowEditModal(false);
+                setEditingProduct(null);
+              }}
+              onSubmit={(formData) => handleEditProduct(editingProduct.id, formData)}
+            />
+          )}
+  
+          {/* ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
+          <AirborneProductCopy onProductCreated={fetchProducts} />
         </div>
-
-        {/* Modals */}
-        {showAddModal && (
-          <AddProductModal
-            onClose={() => setShowAddModal(false)}
-            onSubmit={handleCreateProduct}
-          />
-        )}
-
-        {showEditModal && editingProduct && (
-          <EditProductModal
-            product={editingProduct}
-            onClose={() => {
-              setShowEditModal(false);
-              setEditingProduct(null);
-            }}
-            onSubmit={(formData) => handleEditProduct(editingProduct.id, formData)}
-          />
-        )}
-
-
-        {/* ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
-        <AirborneProductCopy onProductCreated={fetchProducts} />
-      </div>
-    </CompanyLayout>
-  );
-};
-
-
-export default ProductsPage;
+      </CompanyLayout>
+    );
+  };
+  
+  export default ProductsPage;
