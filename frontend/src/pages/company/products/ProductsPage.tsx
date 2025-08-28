@@ -219,11 +219,13 @@ const ProductsPage: React.FC = () => {
           />
         )}
 
+
         {/* ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
         <AirborneProductCopy onProductCreated={fetchProducts} />
       </div>
     </CompanyLayout>
   );
 };
+
 
 export default ProductsPage;
