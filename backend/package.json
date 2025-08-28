@@ -18,7 +18,7 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "start": "node src/index.js",
-    "dev": "dotenv -e .env.development -- nodemon src/index.js"
+    "dev": "dotenv -e .env.development -- nodemon src/index.js",
     "build": "npm install && npx prisma generate --schema=prisma/schema.prisma",
     "start:prod": "node --env-file=.env.production src/index.js",
     "start:dev": "nodemon src/index.js",
@@ -95,7 +95,6 @@
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.10",
-    "dotenv-cli": "^8.0.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
