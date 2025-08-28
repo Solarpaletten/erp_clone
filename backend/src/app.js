@@ -50,7 +50,7 @@ const app = express();
 app.use(compression());
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://erp-clone-1.onrender.com','http://207.154.220.86', 'https://solar.swapoil.de', 'https://itsolar.pl'],
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://erp-solar.onrender.com','http://207.154.220.86', 'https://solar.swapoil.de', 'https://itsolar.pl'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'x-company-id'],
