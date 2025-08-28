@@ -218,12 +218,12 @@ const ProductsPage: React.FC = () => {
             onSubmit={(formData) => handleEditProduct(editingProduct.id, formData)}
           />
         )}
-      </div>
 
+        {/* ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
+        <AirborneProductCopy onProductCreated={fetchProducts} />
+      </div>
+    </CompanyLayout>
   );
 };
 
 export default ProductsPage;
-        {/* ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
-        <AirborneProductCopy onProductCreated={fetchProducts} />
-      </div>
