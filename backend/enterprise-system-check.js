@@ -53,7 +53,7 @@ async function enterpriseSystemCheck() {
     if (!solarAdmin) {
       console.log('⚠️ Администратор solar@solar.com не найден, создаем...');
       
-      const passwordHash = await bcrypt.hash('password', 10);
+      const passwordHash = await bcrypt.hash('pass123', 10);
       const newAdmin = await prisma.users.create({
         data: {
           email: 'solar@solar.com',
@@ -71,7 +71,7 @@ async function enterpriseSystemCheck() {
       console.log(`📋 Администратор найден: ${solarAdmin.email}`);
       
       // Проверяем и исправляем пароль
-      const correctPassword = 'password';
+      const correctPassword = 'pass123';
       const isValidPassword = await bcrypt.compare(correctPassword, solarAdmin.password_hash);
       
       if (!isValidPassword) {
@@ -118,13 +118,13 @@ async function enterpriseSystemCheck() {
     });
 
     if (testUser) {
-      const testPassword = 'password';
+      const testPassword = 'pass123';
       const isValid = await bcrypt.compare(testPassword, testUser.password_hash);
       
       if (isValid) {
         console.log('✅ ТЕСТ ПРОЙДЕН: Аутентификация работает');
         console.log('🔑 Email: solar@solar.com');
-        console.log('🔑 Password: password');
+        console.log('🔑 Password: pass123');
       } else {
         console.log('❌ ТЕСТ НЕ ПРОЙДЕН: Проблема с паролем');
       }
@@ -187,7 +187,7 @@ async function enterpriseSystemCheck() {
       readyForDeploy: allReady,
       loginCredentials: {
         email: 'solar@solar.com',
-        password: 'password'
+        password: 'pass123'
       }
     };
 
