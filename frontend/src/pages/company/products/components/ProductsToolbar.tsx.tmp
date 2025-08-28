@@ -1,8 +1,6 @@
-
 // f/src/pages/company/products/components/ProductsToolbar.tsx
 import React, { useState, useEffect } from 'react';
 import { ProductsToolbarProps } from '../types/productsTypes';
-import AirborneToolbarButton from './AirborneToolbarButton';
 
 const ProductsToolbar: React.FC<ProductsToolbarProps> = ({
   onAddProduct,

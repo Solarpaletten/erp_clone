@@ -6,8 +6,6 @@ import ProductsToolbar from './components/ProductsToolbar';
 import ProductsStats from './components/ProductsStats';
 import AddProductModal from './components/AddProductModal';
 import EditProductModal from './components/EditProductModal';
-import AirborneProductCopy from './components/AirborneProductCopy';
-import AirborneToolbarButton from './components/AirborneToolbarButton';
 import { api } from '../../../api/axios';
 import { 
   Product, 
@@ -224,6 +222,3 @@ const ProductsPage: React.FC = () => {
 };
 
 export default ProductsPage;
-        {/* ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
-        <AirborneProductCopy onProductCreated={fetchProducts} />
-      </div>
