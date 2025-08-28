@@ -6,7 +6,7 @@ import ProductsToolbar from './components/ProductsToolbar';
 import ProductsStats from './components/ProductsStats';
 import AddProductModal from './components/AddProductModal';
 import EditProductModal from './components/EditProductModal';
-import CopyProductButton from './components/CopyProductButton';
+//import CopyProductButton from './components/CopyProductButton';
 import { api } from '../../../api/axios';
 import {
   Product,
