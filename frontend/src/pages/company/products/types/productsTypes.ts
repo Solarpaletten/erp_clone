@@ -58,8 +58,6 @@ export interface ProductsTableProps {
   onRefresh: () => void;
   onEdit: (product: Product) => void;
   onDelete: (id: number) => void;
-  //copyStates: { [key: number]: 'idle' | 'copying' | 'success' | 'error' };  //from useCopyProduct
-  //onCopy: (productId: number, productName: string) => void;  //from useCopyProduct
 }
 
 export interface ProductFormData {
