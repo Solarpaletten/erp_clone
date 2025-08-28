@@ -6,13 +6,14 @@ import ProductsToolbar from './components/ProductsToolbar';
 import ProductsStats from './components/ProductsStats';
 import AddProductModal from './components/AddProductModal';
 import EditProductModal from './components/EditProductModal';
+import CopyProductButton from './components/CopyProductButton';
 import { api } from '../../../api/axios';
-import { 
-  Product, 
-  ProductsStats as Stats, 
+import {
+  Product,
+  ProductsStats as Stats,
   ProductFormData,
   ProductsResponse,
-  ProductsStatsResponse 
+  ProductsStatsResponse
 } from './types/productsTypes';
 
 const ProductsPage: React.FC = () => {
@@ -23,6 +24,10 @@ const ProductsPage: React.FC = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+
+  // В компоненте ProductsPage добавьте:
+  //const { copyStates, copyProduct } = useCopyProduct(fetchProducts);
+
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
@@ -37,12 +42,12 @@ const ProductsPage: React.FC = () => {
   // ===============================================
   // 📡 API FUNCTIONS
   // ===============================================
-  
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
       setError('');
-      
+
       const response = await api.get<ProductsResponse>('/api/company/products', {
         params: {
           search: searchTerm || undefined,
@@ -79,7 +84,7 @@ const ProductsPage: React.FC = () => {
   const handleCreateProduct = async (formData: ProductFormData) => {
     try {
       const response = await api.post('/api/company/products', formData);
-      
+
       if (response.data.success) {
         setShowAddModal(false);
         await fetchProducts();
@@ -96,7 +101,7 @@ const ProductsPage: React.FC = () => {
   const handleEditProduct = async (id: number, formData: ProductFormData) => {
     try {
       const response = await api.put(`/api/company/products/${id}`, formData);
-      
+
       if (response.data.success) {
         setShowEditModal(false);
         setEditingProduct(null);
@@ -118,7 +123,7 @@ const ProductsPage: React.FC = () => {
 
     try {
       const response = await api.delete(`/api/company/products/${id}`);
-      
+
       if (response.data.success) {
         await fetchProducts();
         await fetchStats();
@@ -134,7 +139,7 @@ const ProductsPage: React.FC = () => {
   // ===============================================
   // 🔄 EFFECTS
   // ===============================================
-  
+
   useEffect(() => {
     fetchProducts();
   }, [searchTerm, categoryFilter, currentPage]);
@@ -148,75 +153,88 @@ const ProductsPage: React.FC = () => {
   // ===============================================
 
   return (
-    
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="bg-blue-500 text-white p-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold">📦 Products Management</h1>
-            <p className="text-blue-100 text-sm">Manage your product catalog</p>
-          </div>
-          <button className="bg-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors">
-            Support (FAQ: 15)
-          </button>
+
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="bg-blue-500 text-white p-4 flex justify-between items-center">
+        <div>
+          <h1 className="text-xl font-bold">📦 Products Management</h1>
+          <p className="text-blue-100 text-sm">Manage your product catalog</p>
         </div>
-
-        {/* Stats */}
-        {stats && <ProductsStats stats={stats} />}
-
-        {/* Toolbar */}
-        <ProductsToolbar 
-          onAddProduct={() => setShowAddModal(true)}
-          onSearch={setSearchTerm}
-          onCategoryFilter={setCategoryFilter}
-          searchTerm={searchTerm}
-          categoryFilter={categoryFilter}
-          totalProducts={products.length}
-        />
-
-        {/* Error Display */}
-        {error && (
-          <div className="mx-4 my-2 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            <div className="flex items-center">
-              <span className="mr-2">⚠️</span>
-              {error}
-            </div>
-          </div>
-        )}
-
-        {/* Table */}
-        <div className="flex-1 overflow-hidden">
-          <ProductsTable 
-            products={products}
-            loading={loading}
-            onRefresh={fetchProducts}
-            onEdit={(product) => {
-              setEditingProduct(product);
-              setShowEditModal(true);
-            }}
-            onDelete={handleDeleteProduct}
-          />
-        </div>
-
-        {/* Modals */}
-        {showAddModal && (
-          <AddProductModal
-            onClose={() => setShowAddModal(false)}
-            onSubmit={handleCreateProduct}
-          />
-        )}
-
-        {showEditModal && editingProduct && (
-          <EditProductModal
-            product={editingProduct}
-            onClose={() => {
-              setShowEditModal(false);
-              setEditingProduct(null);
-            }}
-            onSubmit={(formData) => handleEditProduct(editingProduct.id, formData)}
-          />
-        )}
+        <button className="bg-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors">
+          Support (FAQ: 15)
+        </button>
       </div>
+
+      {/* Stats */}
+      {stats && <ProductsStats stats={stats} />}
+
+      {/* Toolbar */}
+      <ProductsToolbar
+        onAddProduct={() => setShowAddModal(true)}
+        onSearch={setSearchTerm}
+        onCategoryFilter={setCategoryFilter}
+        searchTerm={searchTerm}
+        categoryFilter={categoryFilter}
+        totalProducts={products.length}
+      />
+
+      {/* Error Display */}
+      {error && (
+        <div className="mx-4 my-2 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="flex items-center">
+            <span className="mr-2">⚠️</span>
+            {error}
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="flex-1 overflow-hidden">
+        <ProductsTable
+          products={products}
+          loading={loading}
+          onRefresh={fetchProducts}
+          onEdit={(product) => {
+            setEditingProduct(product);
+            setShowEditModal(true);
+          }}
+          onDelete={handleDeleteProduct}
+        />
+      </div>
+
+      {/* Modals */}
+      {showAddModal && (
+        <AddProductModal
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleCreateProduct}
+        />
+      )}
+
+      <ProductsTable
+        products={products}
+        loading={loading}
+        onRefresh={fetchProducts}
+        onEdit={(product) => {
+          setEditingProduct(product);
+          setShowEditModal(true);
+        }}
+        onDelete={handleDeleteProduct}
+        //copyStates={copyStates}
+        //onCopy={copyProduct}
+      />
+
+      {showEditModal && editingProduct && (
+        <EditProductModal
+          product={editingProduct}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingProduct(null);
+          }}
+          onSubmit={(formData) => handleEditProduct(editingProduct.id, formData)}
+        />
+      )}
+    </div>
 
   );
 };

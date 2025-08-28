@@ -1,6 +1,7 @@
 // f/src/pages/company/products/components/ProductsTable.tsx
 import React, { useState } from 'react';
 import { ProductsTableProps, Product } from '../types/productsTypes';
+import CopyProductButton from './CopyProductButton';
 
 const ProductsTable: React.FC<ProductsTableProps> = ({
   products,
@@ -23,6 +24,14 @@ const ProductsTable: React.FC<ProductsTableProps> = ({
       maximumFractionDigits: 2,
     }).format(numAmount);
   };
+
+// В компоненте добавьте в колонку действий:
+  <CopyProductButton
+//  productId={product.id}
+//  productName={product.name}
+//  copyState={copyStates[product.id] || 'idle'}
+//  onCopy={onCopy}
+/>
 
   // Format stock quantity
   const formatStock = (stock: string | number | undefined) => {
