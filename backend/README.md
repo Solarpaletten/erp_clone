@@ -876,3 +876,5 @@ This commit ensures the application works correctly both in local development en
 ## Fixed
 - 2025-03-22 LandingPage.tsx  i18n.ts Add i18n support for Russian and English languages
 - 2025-04-12 Fix onboarding company setup error with correct Prisma model name and enhanced validation
+
+password

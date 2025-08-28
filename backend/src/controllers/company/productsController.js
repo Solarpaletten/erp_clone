@@ -635,5 +635,5 @@ module.exports = {
   updateProduct,
   deleteProduct,
   getProductsStats,
-  copyProduct // ← Новая функция для "Воздушной бухгалтерии"
+  copyProduct
 };
