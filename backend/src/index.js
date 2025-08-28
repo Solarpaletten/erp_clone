@@ -1,7 +1,15 @@
+require('dotenv').config({ path: '.env.production' });
 const app = require('./app');
 const http = require('http');
 const { logger } = require('./config/logger');
 const prismaManager = require('./utils/prismaManager');
+
+// Загрузка переменных окружения
+if (process.env.NODE_ENV === 'production') {
+  require('dotenv').config({ path: '.env.production' });
+} else {
+  require('dotenv').config();
+}
 
 // Создаем HTTP сервер
 const server = http.createServer(app);
