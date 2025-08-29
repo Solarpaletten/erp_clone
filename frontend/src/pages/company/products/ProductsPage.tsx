@@ -1,6 +1,5 @@
 // f/src/pages/company/products/ProductsPage.tsx
 import React, { useState, useEffect } from 'react';
-import CompanyLayout from '../../../components/company/CompanyLayout.tsx';
 import ProductsTable from './components/ProductsTable';
 import ProductsToolbar from './components/ProductsToolbar';
 import ProductsStats from './components/ProductsStats';
@@ -148,74 +147,73 @@ const ProductsPage: React.FC = () => {
   // ===============================================
   // 🎨 RENDER
   // ===============================================
+
     return (
-      <CompanyLayout>
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="bg-blue-500 text-white p-4 flex justify-between items-center">
-            {/* ... ваш header ... */}
-          </div>
-  
-          {/* Stats */}
-          {stats && <ProductsStats stats={stats} />}
-  
-          {/* Toolbar */}
-          <ProductsToolbar 
-            onAddProduct={() => setShowAddModal(true)}
-            onSearch={setSearchTerm}
-            onCategoryFilter={setCategoryFilter}
-            searchTerm={searchTerm}
-            categoryFilter={categoryFilter}
-            totalProducts={products.length}
-          />
-  
-          {/* Error Display */}
-          {error && (
-            <div className="mx-4 my-2 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              <div className="flex items-center">
-                <span className="mr-2">⚠️</span>
-                {error}
-              </div>
-            </div>
-          )}
-  
-          {/* Table */}
-          <div className="flex-1 overflow-hidden">
-            <ProductsTable 
-              products={products}
-              loading={loading}
-              onRefresh={fetchProducts}
-              onEdit={(product) => {
-                setEditingProduct(product);
-                setShowEditModal(true);
-              }}
-              onDelete={handleDeleteProduct}
-            />
-          </div>
-  
-          {/* Modals */}
-          {showAddModal && (
-            <AddProductModal
-              onClose={() => setShowAddModal(false)}
-              onSubmit={handleCreateProduct}
-            />
-          )}
-  
-          {showEditModal && editingProduct && (
-            <EditProductModal
-              product={editingProduct}
-              onClose={() => {
-                setShowEditModal(false);
-                setEditingProduct(null);
-              }}
-              onSubmit={(formData) => handleEditProduct(editingProduct.id, formData)}
-            />
-          )}
-  
-          {/* ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
-          <AirborneProductCopy onProductCreated={fetchProducts} />
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="bg-blue-500 text-white p-4 flex justify-between items-center">
+          {/* ... ваш header ... */}
         </div>
-      </CompanyLayout>
+  
+        {/* Stats */}
+        {stats && <ProductsStats stats={stats} />}
+  
+        {/* Toolbar */}
+        <ProductsToolbar 
+          onAddProduct={() => setShowAddModal(true)}
+          onSearch={setSearchTerm}
+          onCategoryFilter={setCategoryFilter}
+          searchTerm={searchTerm}
+          categoryFilter={categoryFilter}
+          totalProducts={products.length}
+        />
+  
+        {/* Error Display */}
+        {error && (
+          <div className="mx-4 my-2 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="flex items-center">
+              <span className="mr-2">⚠️</span>
+              {error}
+            </div>
+          </div>
+        )}
+  
+        {/* Table */}
+        <div className="flex-1 overflow-hidden">
+          <ProductsTable 
+            products={products}
+            loading={loading}
+            onRefresh={fetchProducts}
+            onEdit={(product) => {
+              setEditingProduct(product);
+              setShowEditModal(true);
+            }}
+            onDelete={handleDeleteProduct}
+          />
+        </div>
+  
+        {/* Modals */}
+        {showAddModal && (
+          <AddProductModal
+            onClose={() => setShowAddModal(false)}
+            onSubmit={handleCreateProduct}
+          />
+        )}
+  
+        {showEditModal && editingProduct && (
+          <EditProductModal
+            product={editingProduct}
+            onClose={() => {
+              setShowEditModal(false);
+              setEditingProduct(null);
+            }}
+            onSubmit={(formData) => handleEditProduct(editingProduct.id, formData)}
+          />
+        )}
+  
+        {/* ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
+        <AirborneProductCopy onProductCreated={fetchProducts} />
+      </div>
     );
   };
   
