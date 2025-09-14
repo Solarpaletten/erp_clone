@@ -542,6 +542,100 @@ const getProductsStats = async (req, res) => {
   }
 };
 
+// 📋 Копирование товара (для "Воздушной бухгалтерии")
+const copyProduct = async (req, res) => {
+  try {
+    const companyId = req.headers['x-company-id'];
+    const productId = parseInt(req.params.id);
+    const userId = req.user.id;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Company ID required'
+      });
+    }
+
+    logger.info(`🔄 Copying product ${productId} for company: ${companyId}`);
+
+    // Находим оригинальный товар
+    const originalProduct = await req.prisma.products.findFirst({
+      where: {
+        id: productId,
+        company_id: parseInt(companyId)
+      }
+    });
+
+    if (!originalProduct) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+
+    // Создаем копию
+    const copiedProduct = await req.prisma.products.create({
+      data: {
+        company_id: parseInt(companyId),
+        name: `${originalProduct.name} (Копия)`,
+        code: `${originalProduct.code}-COPY-${Date.now()}`,
+        description: originalProduct.description,
+        unit: originalProduct.unit,
+        price: originalProduct.price,
+        cost_price: originalProduct.cost_price,
+        currency: originalProduct.currency,
+        vat_rate: originalProduct.vat_rate,
+        category: originalProduct.category,
+        subcategory: originalProduct.subcategory,
+        min_stock: originalProduct.min_stock,
+        current_stock: 0, // Обнуляем остатки в копии
+        is_active: true,
+        is_service: originalProduct.is_service,
+        is_template: false,
+        batch_tracking: originalProduct.batch_tracking,
+        created_by: userId
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    logger.info(`✅ Product copied successfully: ${copiedProduct.name} (ID: ${copiedProduct.id})`);
+
+    res.json({
+      success: true,
+      product: copiedProduct,
+      message: '⚡ Товар скопирован за 10 секунд!',
+      companyId: parseInt(companyId),
+      timeSaved: '5 минут',
+      originalId: productId
+    });
+
+  } catch (error) {
+    logger.error('❌ Error copying product:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+};
+
+// =====================================================
+// ✈️ AIRBORNE COPY SYSTEM - PRODUCTS
+// =====================================================
+
+/**
+ * POST /api/company/products/:id/copy
+ * Воздушное копирование товара с валидацией безопасности
+ */
 const copyProduct = async (req, res) => {
   const startTime = Date.now();
   

@@ -1,5 +1,7 @@
 // f/src/pages/company/products/ProductsPage.tsx
 import React, { useState, useEffect } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import ProductsTable from './components/ProductsTable';
 import ProductsToolbar from './components/ProductsToolbar';
 import ProductsStats from './components/ProductsStats';
@@ -7,13 +9,14 @@ import AddProductModal from './components/AddProductModal';
 import EditProductModal from './components/EditProductModal';
 import AirborneProductCopy from './components/AirborneProductCopy';
 import AirborneToolbarButton from './components/AirborneToolbarButton';
+import UniversalAirborneButton from '../../../components/universal/UniversalAirborneButton';
 import { api } from '../../../api/axios';
-import { 
-  Product, 
-  ProductsStats as Stats, 
+import {
+  Product,
+  ProductsStats as Stats,
   ProductFormData,
   ProductsResponse,
-  ProductsStatsResponse 
+  ProductsStatsResponse
 } from './types/productsTypes';
 
 const ProductsPage: React.FC = () => {
@@ -38,12 +41,12 @@ const ProductsPage: React.FC = () => {
   // ===============================================
   // 📡 API FUNCTIONS
   // ===============================================
-  
+
   const fetchProducts = async () => {
     try {
       setLoading(true);
       setError('');
-      
+
       const response = await api.get<ProductsResponse>('/api/company/products', {
         params: {
           search: searchTerm || undefined,
@@ -76,11 +79,22 @@ const ProductsPage: React.FC = () => {
       console.error('Error fetching stats:', error);
     }
   };
+  
+  const handleAirborneSuccess = (newProduct: any) => {
+    // Оптимистичное добавление товара в список
+    setProducts(prev => [newProduct, ...prev]);
+    fetchStats(); // Обновляем статистику
+    toast.success(`Товар "${newProduct.name}" воздушно скопирован!`);
+  };
+
+  const handleAirborneError = (error: string) => {
+    toast.error(`Ошибка воздушного копирования: ${error}`);
+  };
 
   const handleCreateProduct = async (formData: ProductFormData) => {
     try {
       const response = await api.post('/api/company/products', formData);
-      
+
       if (response.data.success) {
         setShowAddModal(false);
         await fetchProducts();
@@ -97,7 +111,7 @@ const ProductsPage: React.FC = () => {
   const handleEditProduct = async (id: number, formData: ProductFormData) => {
     try {
       const response = await api.put(`/api/company/products/${id}`, formData);
-      
+
       if (response.data.success) {
         setShowEditModal(false);
         setEditingProduct(null);
@@ -119,7 +133,7 @@ const ProductsPage: React.FC = () => {
 
     try {
       const response = await api.delete(`/api/company/products/${id}`);
-      
+
       if (response.data.success) {
         await fetchProducts();
         await fetchStats();
@@ -135,7 +149,7 @@ const ProductsPage: React.FC = () => {
   // ===============================================
   // 🔄 EFFECTS
   // ===============================================
-  
+
   useEffect(() => {
     fetchProducts();
   }, [searchTerm, categoryFilter, currentPage]);
@@ -148,73 +162,85 @@ const ProductsPage: React.FC = () => {
   // 🎨 RENDER
   // ===============================================
 
-    return (
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="bg-blue-500 text-white p-4 flex justify-between items-center">
-          {/* ... ваш header ... */}
-        </div>
-  
-        {/* Stats */}
-        {stats && <ProductsStats stats={stats} />}
-  
-        {/* Toolbar */}
-        <ProductsToolbar 
-          onAddProduct={() => setShowAddModal(true)}
-          onSearch={setSearchTerm}
-          onCategoryFilter={setCategoryFilter}
-          searchTerm={searchTerm}
-          categoryFilter={categoryFilter}
-          totalProducts={products.length}
-        />
-  
-        {/* Error Display */}
-        {error && (
-          <div className="mx-4 my-2 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            <div className="flex items-center">
-              <span className="mr-2">⚠️</span>
-              {error}
-            </div>
-          </div>
-        )}
-  
-        {/* Table */}
-        <div className="flex-1 overflow-hidden">
-          <ProductsTable 
-            products={products}
-            loading={loading}
-            onRefresh={fetchProducts}
-            onEdit={(product) => {
-              setEditingProduct(product);
-              setShowEditModal(true);
-            }}
-            onDelete={handleDeleteProduct}
-          />
-        </div>
-  
-        {/* Modals */}
-        {showAddModal && (
-          <AddProductModal
-            onClose={() => setShowAddModal(false)}
-            onSubmit={handleCreateProduct}
-          />
-        )}
-  
-        {showEditModal && editingProduct && (
-          <EditProductModal
-            product={editingProduct}
-            onClose={() => {
-              setShowEditModal(false);
-              setEditingProduct(null);
-            }}
-            onSubmit={(formData) => handleEditProduct(editingProduct.id, formData)}
-          />
-        )}
-  
-        {/* ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
-        <AirborneProductCopy onProductCreated={fetchProducts} />
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="bg-blue-500 text-white p-4 flex justify-between items-center">
+        {/* ... ваш header ... */}
       </div>
-    );
-  };
-  
-  export default ProductsPage;
+
+      {/* Stats */}
+      {stats && <ProductsStats stats={stats} />}
+
+      {/* Toolbar */}
+      <ProductsToolbar
+        onAddProduct={() => setShowAddModal(true)}
+        onSearch={setSearchTerm}
+        onCategoryFilter={setCategoryFilter}
+        searchTerm={searchTerm}
+        categoryFilter={categoryFilter}
+        totalProducts={products.length}
+      />
+
+      {/* ✈️ ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
+      <UniversalAirborneButton
+        module="products"
+        apiEndpoint="/api/company/products"
+        itemName="товар"
+        lastItemsCount={5}
+        onSuccess={handleAirborneSuccess}
+        onError={handleAirborneError}
+      />
+
+      {/* Error Display */}
+      {error && (
+        <div className="mx-4 my-2 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="flex items-center">
+            <span className="mr-2">⚠️</span>
+            {error}
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="flex-1 overflow-hidden">
+        <ProductsTable
+          products={products}
+          loading={loading}
+          onRefresh={fetchProducts}
+          onEdit={(product) => {
+            setEditingProduct(product);
+            setShowEditModal(true);
+          }}
+          onDelete={handleDeleteProduct}
+        />
+      </div>
+
+      {/* Modals */}
+      {showAddModal && (
+        <AddProductModal
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleCreateProduct}
+        />
+      )}
+
+      {showEditModal && editingProduct && (
+        <EditProductModal
+          product={editingProduct}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingProduct(null);
+          }}
+          onSubmit={(formData) => handleEditProduct(editingProduct.id, formData)}
+        />
+      )}
+
+      <ToastContainer />
+
+      {/* ВОЗДУШНАЯ ПЛАВАЮЩАЯ КНОПКА */}
+      <AirborneProductCopy onProductCreated={fetchProducts} />
+    </div>
+  );
+};
+
+export default ProductsPage;
